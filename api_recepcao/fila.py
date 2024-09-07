@@ -1,4 +1,4 @@
-from pessoa import Pessoa
+from api_recepcao.pessoa import Pessoa
 
 
 class Fila():

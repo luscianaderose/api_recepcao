@@ -2,9 +2,9 @@ import os
 from flask import Flask, request
 from flask_cors import CORS
 from datetime import datetime, date, timedelta
-from pessoa import Pessoa
-from fila import Fila
-from camara import Camara, salvar_camaras, ler_camaras
+from api_recepcao.pessoa import Pessoa
+from api_recepcao.fila import Fila
+from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
 
 
 PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
@@ -357,5 +357,5 @@ def desriscar():
         return 'desriscado'
     return 'Não foi possível desriscar esse nome!'
 
-
-app.run(debug=True, host='0.0.0.0', port=5001)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5001)
