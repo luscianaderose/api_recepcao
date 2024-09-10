@@ -8,12 +8,16 @@ from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
 # from pessoa import Pessoa
 # from fila import Fila
 # from camara import Camara, salvar_camaras, ler_camaras
-
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 
 PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
-if not os.path.exists(PASTA_ARQUIVOS): 
+try:
     os.makedirs(PASTA_ARQUIVOS) 
+except FileExistsError:
+    pass
+
 ARQUIVO_FILA_VIDENCIA = os.path.join(PASTA_ARQUIVOS, 'Fila-videncia.csv')
 ARQUIVO_FILA_PRECE = os.path.join(PASTA_ARQUIVOS, 'Fila-prece.csv')
 ARQUIVO_CAMARAS = os.path.join(PASTA_ARQUIVOS, 'Camaras-info.csv')
@@ -67,8 +71,16 @@ def get_data_hora_atual():
     data_e_hora_em_texto = data_e_hora_atuais.strftime('%d %B %H:%M').upper()
     return dia_semana_usar + ' ' + data_e_hora_em_texto
 
+def limitar_botao_chamar_proximo():
+    return request.json.get('numero')
+
+
 app=Flask(__name__)
 CORS(app)
+
+
+limiter = Limiter(get_remote_address, app=app, default_limits=['1000 per day', '500 per hour'], storage_uri='memory://')
+
 
 @app.route('/')
 def index():
@@ -88,6 +100,7 @@ def camaras():
 
 
 @app.route('/camara', methods=['POST'])
+@limiter.limit('1/minute', key_func=limitar_botao_chamar_proximo)
 def apertou_botao():
     data = request.json
     numero_camara = data.get('numero')
