@@ -2,12 +2,13 @@ import os
 from flask import Flask, request
 from flask_cors import CORS
 from datetime import datetime, date, timedelta
-# from api_recepcao.pessoa import Pessoa
-# from api_recepcao.fila import Fila
-# from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
-from pessoa import Pessoa
-from fila import Fila
-from camara import Camara, salvar_camaras, ler_camaras
+from api_recepcao.pessoa import Pessoa
+from api_recepcao.fila import Fila
+from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
+# from pessoa import Pessoa
+# from fila import Fila
+# from camara import Camara, salvar_camaras, ler_camaras
+
 
 
 PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
