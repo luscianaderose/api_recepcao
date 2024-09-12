@@ -1,5 +1,5 @@
-from api_recepcao.pessoa import Pessoa
-#from pessoa import Pessoa
+# from api_recepcao.pessoa import Pessoa
+from pessoa import Pessoa
 
 
 class Fila():
