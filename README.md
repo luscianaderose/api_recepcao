@@ -44,4 +44,39 @@ FIGMA
 https://www.figma.com/proto/4WaxuFjrOhR8aIHIlHXuIP/prj-recepcao-cefp-01?node-id=0-1&t=XGYyK7bsqyAa5qK2-1
 
 
+# DOCKER
+## pra entrar na pasta do projeto
+cd "/mnt/f/_dev pos puc/prjrecepcaocefp"
+
+## para fazer build da imagem api_recepcao
+docker build -t api_recepcao:1.0 api_recepcao
+docker build -t api_calendario:1.0 api_calendario
+docker build -t front_recepcao:1.0 front_recepcao
+
+## para fazer deploy (serve p rodar os 3 juntos)
+docker-compose -f deploy_recepcao/docker-compose.yml up
+
+sempre que alterar o codigo tem que refazer o build. então precisa parar com o 'down' depois o 'up'.
+
+## para parar os containers enquanto estão no background
+docker-compose -f deploy_recepcao/docker-compose.yml down
+
+## para fazer deploy rodando em background
+d = detatch = rodando em background
+docker-compose -f deploy_recepcao/docker-compose.yml up -d
+
+## para ver os logs enquanto estão no background
+docker-compose -f deploy_recepcao/docker-compose.yml logs
+
+## para ver quais serviços estão rodando
+docker ps
+
+!! proxima aula configura pra nao precisar rodar o build manualmente
+ele mesmo faz o build por vc
+ajudtar configuração pra nao ficar reinstalando tudo
+
+## para executar teste do botão
+curl http://localhost:5001/camara -d '{"numero":"2"}' -H'Content-type: application/json'
+
+## shut down
 
