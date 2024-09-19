@@ -29,3 +29,15 @@ def buscar_camaras_por_numero(numero):
     camara = sessao.query(CamaraModelo).filter(CamaraModelo.numero == numero).one_or_none()
     fechar_sessao(sessao)
     return camara
+
+def deletar_camara_por_numero(numero):
+    sessao = criar_sessao()
+    camara = sessao.query(CamaraModelo).filter(CamaraModelo.numero == numero).one_or_none()
+    if camara:
+        sessao.delete(camara)
+        sessao.commit()
+        print(f'Câmara {numero} deletada com sucesso!')
+    else:
+        print(f'A câmara {numero} não existe no banco de dados!')
+    
+

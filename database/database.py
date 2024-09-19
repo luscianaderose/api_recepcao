@@ -1,7 +1,7 @@
 from conf.sessao import criar_tabelas, criar_sessao, fechar_sessao
-from modelos.camara_modelo import criar_camara_modelo, buscar_todas_camaras, buscar_camaras_por_numero
-from modelos.pessoa_modelo import criar_pessoa, buscar_todas_pessoas, buscar_pessoa_por_numero, buscar_pessoas_por_camara
-from modelos.fila_modelo import criar_fila, buscar_todas_filas, buscar_fila_por_atividade
+from modelos.camara_modelo import criar_camara_modelo, buscar_todas_camaras, buscar_camaras_por_numero, deletar_camara_por_numero
+from modelos.pessoa_modelo import criar_pessoa, buscar_todas_pessoas, buscar_pessoa_por_numero, buscar_pessoas_por_camara, deletar_pessoa_por_numero
+from modelos.fila_modelo import criar_fila, buscar_todas_filas, buscar_fila_por_atividade, deletar_fila_por_atividade
 
 
 criar_tabelas()
@@ -14,12 +14,16 @@ criar_camara_modelo('4')
 
 criar_pessoa('Lusciana', '2')
 criar_pessoa('Lívia', '2')
+criar_pessoa('Pedro', '3')
+criar_pessoa('Lucas', '3A')
 
 lusciana = buscar_pessoa_por_numero(1)
-livia = buscar_camaras_por_numero(2)
-criar_fila(atividade='videncia', nome_display='Vidêcia', pessoas=[lusciana])
-criar_fila(atividade='prece', nome_display='Prece', pessoas=[livia])
+livia = buscar_pessoa_por_numero(2)
+pedro = buscar_pessoa_por_numero(3)
+lucas = buscar_pessoa_por_numero(4)
 
+criar_fila(atividade='videncia', nome_display='Vidêcia', pessoas=[lusciana, livia])
+criar_fila(atividade='prece', nome_display='Prece', pessoas=[pedro, lucas])
 
 
 
@@ -55,8 +59,11 @@ print('Fila por atividade: ', buscar_fila_por_atividade('videncia').nome_display
 
 
 
+#deletar_pessoa_por_numero(1)
 
+#deletar_camara_por_numero('2')
 
+#deletar_fila_por_atividade('prece')
 
 
 

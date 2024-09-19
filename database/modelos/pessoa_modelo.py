@@ -40,3 +40,14 @@ def buscar_pessoas_por_camara(camara_id):
     pessoas = sessao.query(PessoaModelo).filter(PessoaModelo.camara_id == camara_id).all()
     fechar_sessao(sessao)
     return pessoas
+
+def deletar_pessoa_por_numero(numero):
+    sessao = criar_sessao()
+    pessoa = sessao.query(PessoaModelo).filter(PessoaModelo.numero == numero).one_or_none()
+    if pessoa:
+        sessao.delete(pessoa)
+        sessao.commit()
+        print(f'Pessoa com número {numero} deletada com sucesso!')
+    else:
+        print(f'A pessoa com número {numero} não existe no banco de dados!')
+    fechar_sessao(sessao)

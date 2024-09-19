@@ -40,3 +40,13 @@ def buscar_fila_por_atividade(atividade):
     fila = sessao.query(FilaModelo).filter(FilaModelo.atividade == atividade).one_or_none()
     fechar_sessao(sessao)
     return fila
+
+def deletar_fila_por_atividade(atividade):
+    sessao = criar_sessao()
+    fila = sessao.query(FilaModelo).filter(FilaModelo.atividade == atividade).one_or_none()
+    if fila:
+        sessao.delete(fila)
+        sessao.commit()
+        print(f'A fila {atividade} foi deletada com sucesso!')
+    else:
+        print(f'A fila {atividade} não existe no banco de dados!')
