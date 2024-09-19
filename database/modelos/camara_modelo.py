@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import sessionmaker, relationship
-from modelos.base_modelo import BaseModelo
-from conf.sessao import criar_sessao, fechar_sessao
+from database.modelos.base_modelo import BaseModelo
+from database.conf.sessao import criar_sessao, fechar_sessao
 
 
 class CamaraModelo(BaseModelo):
@@ -9,7 +9,10 @@ class CamaraModelo(BaseModelo):
     numero = Column(String, primary_key=True)
     estado = Column(String, default='fechada')
     capacidade = Column(Integer, default=5)
-    pessoas = relationship('PessoaModelo', back_populates='camara')
+    pessoa_em_atendimento = Column(Integer, ForeignKey('pessoa.numero'))
+    fila_atividade = Column(String, ForeignKey('fila.atividade'))
+    fila = relationship('FilaModelo', back_populates='camaras')
+    pessoas = relationship('PessoaModelo', back_populates='camara', foreign_keys='PessoaModelo.camara_id')
 
 def criar_camara_modelo(numero):
     sessao = criar_sessao()
@@ -40,4 +43,13 @@ def deletar_camara_por_numero(numero):
     else:
         print(f'A câmara {numero} não existe no banco de dados!')
     
-
+def popular_camaras(camaras=[('2', 'videncia'), ('4', 'videncia'), ('3', 'prece'), ('3A', 'prece')]):
+    sessao = criar_sessao()
+    db_camaras = sessao.query(CamaraModelo).all()
+    if not db_camaras:
+        for numero, fila_atividade in camaras:
+            camara = CamaraModelo(numero=numero, fila_atividade=fila_atividade)
+            sessao.add(camara)
+            print(f'Adicionando camara {numero}.')
+        sessao.commit()
+    fechar_sessao(sessao)

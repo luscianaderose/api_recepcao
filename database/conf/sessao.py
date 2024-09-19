@@ -30,10 +30,10 @@ def criar_tabelas():
     if not engine:
         criar_engine()
 
-    from modelos.camara_modelo import CamaraModelo
-    from modelos.fila_modelo import FilaModelo
-    from modelos.pessoa_modelo import PessoaModelo
-    from modelos.base_modelo import BaseModelo
+    from database.modelos.camara_modelo import CamaraModelo
+    from database.modelos.fila_modelo import FilaModelo
+    from database.modelos.pessoa_modelo import PessoaModelo
+    from database.modelos.base_modelo import BaseModelo
     BaseModelo.metadata.drop_all(engine) #excluir banco automaticamente e criar de novo
     BaseModelo.metadata.create_all(engine)
 

@@ -3,12 +3,15 @@ from pessoa import Pessoa
 
 
 class Fila():
-    def __init__(self, atividade, nome_arquivo, nome_display):
+    def __init__(self, atividade, nome_display, nome_arquivo=None):
         self.atividade = atividade
         self.nome_display = nome_display
         self.nome_arquivo = nome_arquivo
         self.fila = {}
         self.proximo_numero = 1
+    
+    def __repr__(self) -> str:
+        return f'<Fila {self.atividade}>'
 
     def to_dict(self):
         return {
@@ -147,4 +150,7 @@ class Fila():
                 if pessoa.numero == numero:
                     return index + 1
         return None
+    
+def to_fila(db_fila):
+    return Fila(atividade=db_fila.atividade, nome_display=db_fila.nome_display)
     
