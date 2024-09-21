@@ -1,5 +1,5 @@
 from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade
-from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero
+from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
 from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas
 from database.conf.sessao import criar_tabelas
 from fila import to_fila
@@ -44,6 +44,9 @@ for db_pessoa in buscar_todas_pessoas():
             camara = dict_camaras[db_pessoa.camara_id]
             camara.fila = fila
     dict_pessoas[db_pessoa.numero] = pessoa
+
+dict_camaras['2'].capacidade_maxima = 10
+atualizar_camara(dict_camaras['2'])
 
 # print('buscar_pessoas_da_fila_por_atividade(prece) num-pessoa / posicao: ', buscar_pessoas_da_fila_por_atividade('prece'))
 # print('dict_pessoas: ', dict_pessoas)

@@ -53,3 +53,13 @@ def popular_camaras(camaras=[('2', 'videncia'), ('4', 'videncia'), ('3', 'prece'
             print(f'Adicionando camara {numero}.')
         sessao.commit()
     fechar_sessao(sessao)
+
+def atualizar_camara(camara):
+    sessao = criar_sessao()
+    db_camara = sessao.query(CamaraModelo).filter(CamaraModelo.numero == camara.numero_camara).one_or_none()
+    if db_camara:
+        db_camara.estado = camara.estado
+        db_camara.capacidade = camara.capcidade
+        db_camara.pessoa_em_atendimento = camara.pessoa_em_atendimento
+    sessao.commit()
+    fechar_sessao(sessao)

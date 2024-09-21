@@ -11,53 +11,98 @@ from camara import Camara, salvar_camaras, ler_camaras
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade
+from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero
+from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas
+from database.conf.sessao import criar_tabelas
+from fila import to_fila
+from camara import to_camara
+from pessoa import to_pessoa
 
-PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
-try:
-    os.makedirs(PASTA_ARQUIVOS) 
-except FileExistsError:
-    pass
 
-ARQUIVO_FILA_VIDENCIA = os.path.join(PASTA_ARQUIVOS, 'Fila-videncia.csv')
-ARQUIVO_FILA_PRECE = os.path.join(PASTA_ARQUIVOS, 'Fila-prece.csv')
-ARQUIVO_CAMARAS = os.path.join(PASTA_ARQUIVOS, 'Camaras-info.csv')
+# PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
+# try:
+#     os.makedirs(PASTA_ARQUIVOS) 
+# except FileExistsError:
+#     pass
 
-for arquivo in [ARQUIVO_FILA_VIDENCIA, ARQUIVO_FILA_PRECE, ARQUIVO_CAMARAS]:
-    with open(arquivo, 'a+'):
-        pass
+# ARQUIVO_FILA_VIDENCIA = os.path.join(PASTA_ARQUIVOS, 'Fila-videncia.csv')
+# ARQUIVO_FILA_PRECE = os.path.join(PASTA_ARQUIVOS, 'Fila-prece.csv')
+# ARQUIVO_CAMARAS = os.path.join(PASTA_ARQUIVOS, 'Camaras-info.csv')
 
-fila_videncia = Fila('videncia', 'Vidência', ARQUIVO_FILA_VIDENCIA)
-fila_prece = Fila('prece', 'Prece', ARQUIVO_FILA_PRECE)
+# for arquivo in [ARQUIVO_FILA_VIDENCIA, ARQUIVO_FILA_PRECE, ARQUIVO_CAMARAS]:
+#     with open(arquivo, 'a+'):
+#         pass
 
-fila_videncia.ler_fila()
-fila_prece.ler_fila()
+# fila_videncia = Fila('videncia', 'Vidência', ARQUIVO_FILA_VIDENCIA)
+# fila_prece = Fila('prece', 'Prece', ARQUIVO_FILA_PRECE)
 
-if fila_videncia.fila:
-    fila_videncia.proximo_numero = fila_videncia.values()[-1].numero + 1
-if fila_prece.fila:
-    fila_prece.proximo_numero = fila_prece.values()[-1].numero + 1
+# fila_videncia.ler_fila()
+# fila_prece.ler_fila()
 
-camara2 = Camara('2', fila_videncia, fila_videncia.atividade)
-camara4 = Camara('4', fila_videncia, fila_videncia.atividade)
-camara3 = Camara('3', fila_prece, fila_prece.atividade)
-camara3A = Camara('3A', fila_prece, fila_prece.atividade)
+# if fila_videncia.fila:
+#     fila_videncia.proximo_numero = fila_videncia.values()[-1].numero + 1
+# if fila_prece.fila:
+#     fila_prece.proximo_numero = fila_prece.values()[-1].numero + 1
 
-dict_camaras = {
-    '2':camara2,
-    '4':camara4,
-    '3':camara3,
-    '3A':camara3A,
-}
+# camara2 = Camara('2', fila_videncia, fila_videncia.atividade)
+# camara4 = Camara('4', fila_videncia, fila_videncia.atividade)
+# camara3 = Camara('3', fila_prece, fila_prece.atividade)
+# camara3A = Camara('3A', fila_prece, fila_prece.atividade)
 
-dados_camaras = ler_camaras(ARQUIVO_CAMARAS)
+# dict_camaras = {
+#     '2':camara2,
+#     '4':camara4,
+#     '3':camara3,
+#     '3A':camara3A,
+# }
 
-for linha in dados_camaras:
-    numero_camara, pessoa_em_atendimento, numero_de_atendimentos, estado, capacidade_maxima = linha.split(',')
-    camara = dict_camaras[numero_camara.strip()]
-    camara.capacidade_maxima = int(capacidade_maxima.strip())
-    camara.pessoa_em_atendimento = camara.fila.get(int(pessoa_em_atendimento)) if pessoa_em_atendimento else None
-    camara.numero_de_atendimentos = int(numero_de_atendimentos.strip())
-    camara.estado = estado.strip()
+# dados_camaras = ler_camaras(ARQUIVO_CAMARAS)
+
+# for linha in dados_camaras:
+#     numero_camara, pessoa_em_atendimento, numero_de_atendimentos, estado, capacidade_maxima = linha.split(',')
+#     camara = dict_camaras[numero_camara.strip()]
+#     camara.capacidade_maxima = int(capacidade_maxima.strip())
+#     camara.pessoa_em_atendimento = camara.fila.get(int(pessoa_em_atendimento)) if pessoa_em_atendimento else None
+#     camara.numero_de_atendimentos = int(numero_de_atendimentos.strip())
+#     camara.estado = estado.strip()
+
+# Iniciando a criação de tabelas no banco de dados.
+criar_tabelas()
+
+# Populando dados iniciais no banco de dados.
+popular_filas()
+popular_camaras()
+popular_pessoas()
+
+# Convertendo dados do banco para as classes originais.
+dict_filas = {}
+dict_fila_pessoas = {}
+dict_camaras = {}
+dict_pessoas = {}
+
+for db_fila in buscar_todas_filas():
+    dict_filas[db_fila.atividade] = to_fila(db_fila)
+    dict_fila_pessoas[db_fila.atividade] = buscar_pessoas_da_fila_por_atividade(db_fila.atividade)
+
+for camara in buscar_todas_camaras():
+    dict_camaras[camara.numero] = to_camara(camara)
+
+for db_pessoa in buscar_todas_pessoas():
+    pessoa = to_pessoa(db_pessoa)
+    if db_pessoa.camara_id:
+        pessoa.camara = db_pessoa.camara_id #dict_camaras[db_pessoa.camara_id]
+        db_camara = buscar_camaras_por_numero(db_pessoa.camara_id)
+        if db_camara.fila_atividade:
+            fila = dict_filas[db_camara.fila_atividade]
+            posicao_pessoas = dict_fila_pessoas[fila.atividade]
+            fila.fila[posicao_pessoas[pessoa.numero]] = pessoa
+            camara = dict_camaras[db_pessoa.camara_id]
+            camara.fila = fila
+            camara.nome_fila = fila.atividade
+    dict_pessoas[db_pessoa.numero] = pessoa
+
+
 
 set_camaras_chamando = set()
 set_audios_notificacoes = set()
@@ -97,35 +142,39 @@ def calendario():
 @app.route('/camaras')
 def camaras():
     return [camara.to_dict() for camara in dict_camaras.values()]
+    # for camara in dict_camaras.values():
+    #     print('camara.to_dict(): ', camara.to_dict(), '\n')
+    # return ''
 
 
-@app.route('/camara', methods=['POST'])
-@limiter.limit('1/minute', key_func=limitar_botao_chamar_proximo)
-def apertou_botao():
-    data = request.json
-    numero_camara = data.get('numero')
-    camara = dict_camaras[numero_camara]
-    if camara.estado == camara.atendendo:
-        camara.chamar_atendido()
-        salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-        global ultima_camara_chamada
-        ultima_camara_chamada = camara
-    return {'message': f'Camara: {numero_camara}'}
+# @app.route('/camara', methods=['POST'])
+# @limiter.limit('1/minute', key_func=limitar_botao_chamar_proximo)
+# def apertou_botao():
+#     data = request.json
+#     numero_camara = data.get('numero')
+#     camara = dict_camaras[numero_camara]
+#     if camara.estado == camara.atendendo:
+#         camara.chamar_atendido()
+#         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+#         global ultima_camara_chamada
+#         ultima_camara_chamada = camara
+#     return {'message': f'Camara: {numero_camara}'}
 
 @app.route('/abrir_camara/<numero_camara>')
 def abrir_camara(numero_camara):
     camara = dict_camaras[numero_camara]
     camara.abrir()
-    salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'camara aberta'
 
 @app.route('/chamar_proximo/<numero_camara>')
 def chamar_proximo(numero_camara):
     camara = dict_camaras[numero_camara]
+    # print('numero_camara: ', type(numero_camara))
     if camara.estado == camara.atendendo:
         camara.chamar_atendido()
         set_camaras_chamando.add(camara)
-        salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+        # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
         global ultima_camara_chamada
         ultima_camara_chamada = camara
     return camara.pessoa_em_atendimento.to_dict()
@@ -135,7 +184,7 @@ def avisado(numero_camara):
     camara = dict_camaras[numero_camara]
     if camara.estado == camara.avisar:
         camara.estado = camara.avisado
-        salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+        # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'avisado'
 
 @app.route('/fechar_camara/<numero_camara>')
@@ -144,7 +193,7 @@ def fechar_camara(numero_camara):
     if camara.estado == camara.avisado:
         camara.estado = camara.fechada
         camara.pessoa_em_atendimento = None
-        salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+        # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'fechar camara'
 
 @app.route('/bolinhas')
@@ -160,7 +209,7 @@ def bolinhas():
         if camara.estado != camara.atendendo:
             camara.estado = camara.atendendo
         camara.numero_de_atendimentos -= 1
-    salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'bolinhas atualizadas'
 
 @app.route('/deschamar/<numero_camara>')
@@ -188,7 +237,7 @@ def deschamar(numero_camara):
     camara.numero_de_atendimentos -= 1
     camara.estado = camara.atendendo
     camara.fila.salvar_fila()
-    salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'deschamado'
 
 @app.route('/aumentar_capacidade/<numero_camara>')
@@ -198,7 +247,7 @@ def aumentar_capacidade(numero_camara):
         camara.capacidade_maxima += 1
         if camara.estado != camara.atendendo and camara.numero_de_atendimentos > 0:
             camara.estado = camara.atendendo
-    salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'aumentando'
 
 @app.route('/diminuir_capacidade/<numero_camara>')
@@ -208,7 +257,7 @@ def diminuir_capacidade(numero_camara):
         camara.capacidade_maxima -= 1
         if camara.estado == camara.atendendo and camara.numero_de_atendimentos >= camara.capacidade_maxima:
             camara.estado = camara.avisar
-    salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'diminuindo'
 
 @app.route('/reiniciar_tudo_confirmado')
@@ -217,29 +266,27 @@ def reiniciar_tudo_confirmado():
         camara.numero_de_atendimentos = 0
         camara.fechar()
         camara.capacidade_maxima = 5
-    fila_prece.clear()
-    fila_videncia.clear()
-    # Para criar pessoas automaticamente.
-    for nome in ['JOSÉ', 'MARIA', 'JOÃO', 'CLÁUDIA', 'MÁRIO', 'BEATRIZ', 'FLÁVIA']:
-        numero = fila_videncia.proximo_numero
-        pessoa = Pessoa(numero, nome)
-        fila_videncia.adicionar_pessoa(pessoa, numero)
-        numero = fila_prece.proximo_numero
-        pessoa = Pessoa(numero, nome)
-        fila_prece.adicionar_pessoa(pessoa, numero)
-    # fim -> Para criar pessoas automaticamente
-    fila_prece.salvar_fila()
-    fila_videncia.salvar_fila()
-    salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    # fila_videncia.clear()
+    # fila_prece.clear()
+    for fila in dict_filas.values():
+        fila.clear()
+    # fila_prece.salvar_fila()
+    # fila_videncia.salvar_fila()
+    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
     return 'reiniciado'
 
 @app.route('/fila_videncia')
 def fun_fila_videncia():
-    return fila_videncia.to_dict()
+    # return fila_videncia.to_dict()
+    return dict_filas.get('videncia').to_dict()
+    # for fila in dict_filas.get('videncia'):
+    #     print(fila.to_dict())
+    # return ''
 
 @app.route('/fila_prece')
 def fun_fila_prece():
-    return fila_prece.to_dict()
+    # return fila_prece.to_dict()
+    return dict_filas.get('prece').to_dict()
 
 @app.route('/remover_atendido')
 def remover_atendido():
@@ -252,10 +299,13 @@ def editar_atendido_confirmado():
     nome_fila = request.args.get('nome_fila')
     numero_atendido = int(request.args.get('numero_atendido'))
     nome_atendido = request.args.get('nome_atendido')
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
     fila.editar_pessoa(numero_atendido, nome_atendido)
     return 'atendido editado'
 
@@ -263,12 +313,15 @@ def editar_atendido_confirmado():
 def remover_atendido_confirmado():
     nome_fila = request.args.get('nome_fila')
     numero_atendido = int(request.args.get('numero_atendido'))
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
-    else: 
-        return 'Fila incorreta!'
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
+    # else: 
+    #     return 'Fila incorreta!'
     fila.remover_pessoa(numero_atendido)
     return 'atendido removido'
 
@@ -277,12 +330,15 @@ def reposicionar_atendido():
     nome_fila = request.args.get('nome_fila')
     numero_atendido = int(request.args.get('numero_atendido'))
     mover_para = request.args.get('mover_para')
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
-    else: 
-        return 'Fila incorreta!'
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
+    # else: 
+    #     return 'Fila incorreta!'
     keys = fila.keys()
     indice = keys.index(numero_atendido)
     if mover_para == 'cima':
@@ -300,10 +356,13 @@ def criar_dupla():
     nome_fila_dupla = request.args.get('nome_fila_dupla')
     numero_dupla = int(request.args.get('numero_dupla'))
     numero_atendido = int(request.args.get('numero_atendido'))
-    if nome_fila_dupla == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila_dupla == fila_prece.atividade:
-        fila = fila_prece
+    fila = dict_filas.get(nome_fila_dupla)
+    if not fila:
+        return f'Fila {nome_fila_dupla} não existe!'
+    # if nome_fila_dupla == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila_dupla == fila_prece.atividade:
+    #     fila = fila_prece
     keys = fila.keys()
     indice = keys.index(numero_atendido)
     indice_dupla = keys.index(numero_dupla)
@@ -317,10 +376,13 @@ def criar_dupla():
 def cancelar_dupla():
     nome_fila = request.args.get('nome_fila')
     numero_atendido = int(request.args.get('numero_atendido'))
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
     fila.cancelar_dupla(numero_atendido)
     return 'Dupla cancelada'
 
@@ -328,12 +390,15 @@ def cancelar_dupla():
 def adicionar_atendido():
     nome_fila = request.args.get('nome_fila')
     nome_atendido = request.args.get('nome_atendido').upper()
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
-    else: 
-        return 'Fila incorreta!'
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
+    # else: 
+    #     return 'Fila incorreta!'
     numero = fila.proximo_numero
     pessoa = Pessoa(numero, nome_atendido)
     try:
@@ -347,10 +412,13 @@ def observacao():
     nome_fila = request.args.get('nome_fila')
     numero_atendido = int(request.args.get('numero_atendido'))
     observacao = request.args.get('observacao')
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
     fila.adicionar_observacao(numero_atendido, observacao)
     return 'observação adicionada'
 
@@ -358,10 +426,13 @@ def observacao():
 def desriscar():
     nome_fila = request.args.get('nome_fila')
     numero_atendido = int(request.args.get('numero_atendido'))
-    if nome_fila == fila_videncia.atividade:
-        fila = fila_videncia
-    elif nome_fila == fila_prece.atividade:
-        fila = fila_prece
+    fila = dict_filas.get(nome_fila)
+    if not fila:
+        return f'Fila {nome_fila} não existe!'
+    # if nome_fila == fila_videncia.atividade:
+    #     fila = fila_videncia
+    # elif nome_fila == fila_prece.atividade:
+    #     fila = fila_prece
     if numero_atendido in fila:
         pessoa = fila.get(numero_atendido)
         pessoa.estado = pessoa.aguardando

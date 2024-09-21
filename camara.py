@@ -55,6 +55,11 @@ class Camara:
             if self.pessoa_em_atendimento.dupla != -1:
                 dupla = self.fila.get(self.pessoa_em_atendimento.dupla)
                 dupla.estado = dupla.riscado
+        else:
+            if self.fila.fila.get(1):
+                pessoa = self.fila.fila.get(1)
+                pessoa.estado = pessoa.aguardando
+                self.pessoa_em_atendimento = self.fila.fila.get(1)
         self.pessoa_em_atendimento = pessoa
         self.pessoa_em_atendimento.camara = self.numero_camara
         self.pessoa_em_atendimento.estado = pessoa.atendendo
@@ -72,7 +77,7 @@ class Camara:
         retorno = f'Câmara {self.numero_camara} chamando {self.pessoa_em_atendimento}.'
         if self.numero_de_atendimentos >= self.capacidade_maxima:
             self.estado = self.avisar
-        self.fila.salvar_fila()
+        # self.fila.salvar_fila()
         return retorno
     
     def bolinhas(self):
