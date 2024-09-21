@@ -7,6 +7,7 @@ from database.conf.sessao import criar_sessao, fechar_sessao
 fila_pessoa = Table(
     'fila_pessoa',
     BaseModelo.metadata, 
+    Column('posicao', Integer, primary_key=True, autoincrement=True),
     Column('fila_atividade', String, ForeignKey('fila.atividade')),
     Column('pessoa_numero', Integer, ForeignKey('pessoa.numero'))
 )
@@ -61,3 +62,17 @@ def popular_filas(filas=[('videncia', 'Vidência'), ('prece', 'Prece')]):
             print(f'Adicionando fila {atividade}.')
         sessao.commit()
     fechar_sessao(sessao)
+
+def buscar_pessoas_da_fila_por_atividade(atividade):
+    sessao = criar_sessao()
+    fila = sessao.query(FilaModelo).filter(FilaModelo.atividade == atividade).one_or_none()
+    pessoas_com_posicao = {}
+    for pessoa in fila.pessoas:
+        #resultado_pessoa_fila é uma linha da tabela pessoa_fila
+        resultado_pessoa_fila = sessao.query(fila_pessoa).filter(
+            fila_pessoa.c.fila_atividade == fila.atividade,
+            fila_pessoa.c.pessoa_numero == pessoa.numero
+        ).one_or_none()
+        pessoas_com_posicao[pessoa.numero] = resultado_pessoa_fila.posicao
+    fechar_sessao(sessao)
+    return pessoas_com_posicao
