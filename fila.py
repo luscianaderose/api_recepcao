@@ -3,12 +3,12 @@ from pessoa import Pessoa
 
 
 class Fila():
-    def __init__(self, atividade, nome_display, nome_arquivo=None):
+    def __init__(self, atividade, nome_display, nome_arquivo=None, proximo_numero=1):
         self.atividade = atividade
         self.nome_display = nome_display
         self.nome_arquivo = nome_arquivo
         self.fila = {}
-        self.proximo_numero = 1
+        self.proximo_numero = proximo_numero
     
     def __repr__(self) -> str:
         return f'<Fila {self.atividade}>'
@@ -152,5 +152,9 @@ class Fila():
         return None
     
 def to_fila(db_fila):
-    return Fila(atividade=db_fila.atividade, nome_display=db_fila.nome_display)
+    return Fila(
+        atividade=db_fila.atividade, 
+        nome_display=db_fila.nome_display, 
+        proximo_numero=db_fila.proximo_numero
+    )
     

@@ -12,6 +12,9 @@ class Pessoa:
         self.asterisco = asterisco
         self.observacao = observacao
 
+    def __repr__(self) -> str:
+        return f'<Pessoa {self.numero}>'
+
     def to_dict(self):
         return {
             "nome": self.nome,
@@ -37,5 +40,14 @@ class Pessoa:
         else:
             return f'{self.nome}'
         
-    def __repr__(self):
-        return self.nome
+    def to_pessoa(db_pessoa):
+        return Pessoa()
+
+def to_pessoa(db_pessoa):
+    return Pessoa(
+        numero = db_pessoa.numero, 
+        nome = db_pessoa.nome, 
+        estado = db_pessoa.estado, 
+        dupla = db_pessoa.dupla, 
+        observacao = db_pessoa.observacao
+    )

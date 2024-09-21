@@ -26,8 +26,8 @@ for arquivo in [ARQUIVO_FILA_VIDENCIA, ARQUIVO_FILA_PRECE, ARQUIVO_CAMARAS]:
     with open(arquivo, 'a+'):
         pass
 
-fila_videncia = Fila('videncia', ARQUIVO_FILA_VIDENCIA, 'Vidência')
-fila_prece = Fila('prece', ARQUIVO_FILA_PRECE, 'Prece')
+fila_videncia = Fila('videncia', 'Vidência', ARQUIVO_FILA_VIDENCIA)
+fila_prece = Fila('prece', 'Prece', ARQUIVO_FILA_PRECE)
 
 fila_videncia.ler_fila()
 fila_prece.ler_fila()

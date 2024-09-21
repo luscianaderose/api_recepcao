@@ -4,7 +4,7 @@ class Camara:
     avisar = 'ÚLTIMO'
     avisado = 'FOI AVISADO'
 
-    def __init__(self, numero_camara, fila, nome_fila, estado=fechada, capacidade_maxima=5):
+    def __init__(self, numero_camara, fila=None, nome_fila=None, estado=fechada, capacidade_maxima=5):
         self.numero_camara = numero_camara
         self.fila = fila
         self.nome_fila = nome_fila
@@ -13,6 +13,9 @@ class Camara:
         self.estado = estado
         self.audio = f'camara{numero_camara}.wav'
         self.capacidade_maxima = capacidade_maxima
+    
+    def __repr__(self) -> str:
+        return f'<Camara {self.numero_camara}>'
 
     def to_dict(self):
         return {
@@ -94,4 +97,7 @@ def salvar_camaras(dict_camaras, nome_arquivo):
 def ler_camaras(nome_arquivo):
     with open(nome_arquivo, 'r') as f:
         return f.read().splitlines()
-    
+
+def to_camara(db_camara):
+    return Camara(db_camara.numero, estado=db_camara.estado, capacidade_maxima=db_camara.capacidade)
+
