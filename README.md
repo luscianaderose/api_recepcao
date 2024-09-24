@@ -27,7 +27,7 @@ http://localhost:5173/
 Digite os seguintes comandos no terminal:
 ```
 pip install -r requirements.txt
-python app.py
+python -m api_recepcao
 ```
 Para acessar no navegador:
 http://localhost:5001/

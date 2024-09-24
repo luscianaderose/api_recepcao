@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import sessionmaker, relationship
-from database.modelos.base_modelo import BaseModelo
-from database.conf.sessao import criar_sessao, fechar_sessao
+from api_recepcao.database.modelos.base_modelo import BaseModelo
+from api_recepcao.database.conf.sessao import criar_sessao, fechar_sessao
 
 
 fila_pessoa = Table(

@@ -1,7 +1,7 @@
-from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
-from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
-from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
-from database.conf.sessao import criar_tabelas
+from api_recepcao.database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
+from api_recepcao.database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
+from api_recepcao.database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
+from api_recepcao.database.conf.sessao import criar_tabelas
 from fila import to_fila
 from camara import to_camara
 from pessoa import to_pessoa

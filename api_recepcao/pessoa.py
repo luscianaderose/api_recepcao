@@ -1,4 +1,4 @@
-from database.modelos.pessoa_modelo import buscar_pessoa_por_numero
+from api_recepcao.database.modelos.pessoa_modelo import buscar_pessoa_por_numero
 
 
 class Pessoa:

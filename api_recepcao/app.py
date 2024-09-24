@@ -2,22 +2,19 @@ import os
 from flask import Flask, request
 from flask_cors import CORS
 from datetime import datetime, date, timedelta
-# from api_recepcao.pessoa import Pessoa
-# from api_recepcao.fila import Fila
-# from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
-from pessoa import Pessoa
-from fila import Fila
-from camara import Camara, salvar_camaras, ler_camaras
+from api_recepcao.pessoa import Pessoa, to_pessoa
+from api_recepcao.fila import Fila, to_fila
+from api_recepcao.camara import Camara, salvar_camaras, ler_camaras, to_camara
+# from pessoa import Pessoa
+# from fila import Fila
+# from camara import Camara, salvar_camaras, ler_camaras
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
-from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
-from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
-from database.conf.sessao import criar_tabelas
-from fila import to_fila
-from camara import to_camara
-from pessoa import to_pessoa
+from api_recepcao.database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
+from api_recepcao.database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
+from api_recepcao.database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
+from api_recepcao.database.conf.sessao import criar_tabelas
 
 
 # PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
@@ -456,5 +453,3 @@ def desriscar():
         return 'desriscado'
     return 'Não foi possível desriscar esse nome!'
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)

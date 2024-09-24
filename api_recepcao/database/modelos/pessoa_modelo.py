@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import sessionmaker, relationship
-from database.modelos.base_modelo import BaseModelo
+from api_recepcao.database.modelos.base_modelo import BaseModelo
 from .fila_modelo import fila_pessoa, FilaModelo
 from .camara_modelo import CamaraModelo
-from database.conf.sessao import criar_sessao, fechar_sessao
+from api_recepcao.database.conf.sessao import criar_sessao, fechar_sessao
 
 
 class PessoaModelo(BaseModelo):
