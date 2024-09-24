@@ -58,8 +58,10 @@ def atualizar_camara(camara):
     sessao = criar_sessao()
     db_camara = sessao.query(CamaraModelo).filter(CamaraModelo.numero == camara.numero_camara).one_or_none()
     if db_camara:
+        db_camara.numero = camara.numero_camara
         db_camara.estado = camara.estado
-        db_camara.capacidade = camara.capcidade
+        db_camara.capacidade = camara.capacidade_maxima
         db_camara.pessoa_em_atendimento = camara.pessoa_em_atendimento
+        db_camara.fila_atividade = camara.nome_fila
     sessao.commit()
     fechar_sessao(sessao)

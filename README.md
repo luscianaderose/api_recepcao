@@ -16,7 +16,7 @@ A Congregação Espírita Francisco de Paula oferece tratamentos espirituais de 
 ### PARA INICIAR O REACT
 Digite os seguintes comandos no terminal:
 ```
-cd front
+cd front_recepcao
 npm i
 npm run dev
 ```

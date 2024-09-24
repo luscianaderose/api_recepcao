@@ -10,12 +10,14 @@ class PessoaModelo(BaseModelo):
     __tablename__ = 'pessoa'
     numero = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String)
-    dupla = Column(Integer, default=-1)
+    dupla_numero = Column(Integer, ForeignKey('pessoa.numero'), default=-1)
     estado = Column(String, default='aguardando')
     observacao = Column(String, default='')
     camara_id = Column(String, ForeignKey('camara.numero'))
     camara = relationship('CamaraModelo', back_populates='pessoas', foreign_keys=[camara_id])
     fila = relationship('FilaModelo', secondary=fila_pessoa, back_populates='pessoas')
+    dupla = relationship('PessoaModelo', remote_side=[numero], backref='duplas')
+    #dupla = relationship('PessoaModelo', back_populates='dupla_numero')
 
 def criar_pessoa(nome, camara_id):
     sessao = criar_sessao()
@@ -88,3 +90,17 @@ def popular_pessoas(
             print(f'Adicionando pessoa {nome}.')
         sessao.commit()
     fechar_sessao(sessao)
+
+def atualizar_pessoa(pessoa):
+    sessao = criar_sessao()
+    db_pessoa = sessao.query(PessoaModelo).filter(PessoaModelo.numero == pessoa.numero).one_or_none()
+    if db_pessoa:
+        db_pessoa.numero = pessoa.numero
+        db_pessoa.nome = pessoa.nome
+        db_pessoa.dupla_numero = pessoa.dupla
+        db_pessoa.estado = pessoa.estado
+        if pessoa.camara:
+            db_pessoa.camara_id = pessoa.camara.numero_camara
+    sessao.commit()
+    fechar_sessao(sessao)
+

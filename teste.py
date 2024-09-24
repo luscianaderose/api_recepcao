@@ -1,6 +1,6 @@
-from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade
+from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
 from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
-from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas
+from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
 from database.conf.sessao import criar_tabelas
 from fila import to_fila
 from camara import to_camara
@@ -47,6 +47,14 @@ for db_pessoa in buscar_todas_pessoas():
 
 dict_camaras['2'].capacidade_maxima = 10
 atualizar_camara(dict_camaras['2'])
+
+dict_filas['prece'].proximo_numero = 2
+atualizar_fila(dict_filas['prece'])
+
+dict_pessoas[1].estado = 'atendido'
+atualizar_pessoa(dict_pessoas[1])
+
+remover_pessoa_da_fila(dict_pessoas[2].numero, 'videncia')
 
 # print('buscar_pessoas_da_fila_por_atividade(prece) num-pessoa / posicao: ', buscar_pessoas_da_fila_por_atividade('prece'))
 # print('dict_pessoas: ', dict_pessoas)

@@ -76,3 +76,32 @@ def buscar_pessoas_da_fila_por_atividade(atividade):
         pessoas_com_posicao[pessoa.numero] = resultado_pessoa_fila.posicao
     fechar_sessao(sessao)
     return pessoas_com_posicao
+
+def atualizar_fila(fila):
+    sessao = criar_sessao()
+    db_fila = sessao.query(FilaModelo).filter(FilaModelo.atividade == fila.atividade).one_or_none()
+    if db_fila:
+        db_fila.atividade = fila.atividade
+        db_fila.nome_display = fila.nome_display
+        db_fila.proximo_numero = fila.proximo_numero
+    sessao.commit()
+    fechar_sessao(sessao)
+
+def remover_pessoa_da_fila(pessoa_numero, fila_atividade):
+    sessao = criar_sessao()
+    db_fila = sessao.query(FilaModelo).filter(FilaModelo.atividade == fila_atividade).one_or_none()
+    if db_fila:
+        pessoa_fila = sessao.query(fila_pessoa).filter(
+            fila_pessoa.c.fila_atividade == fila_atividade,
+            fila_pessoa.c.pessoa_numero == pessoa_numero
+        ).one_or_none()
+        if pessoa_fila:
+            # sessao.delete(pessoa_fila)
+            delete_stmt = fila_pessoa.delete().where(
+                fila_pessoa.c.fila_atividade == fila_atividade,
+                fila_pessoa.c.pessoa_numero == pessoa_numero
+            )
+            sessao.execute(delete_stmt)
+            sessao.commit()
+    fechar_sessao(sessao)
+            

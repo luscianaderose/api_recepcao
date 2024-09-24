@@ -11,9 +11,9 @@ from camara import Camara, salvar_camaras, ler_camaras
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade
-from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero
-from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas
+from database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
+from database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
+from database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
 from database.conf.sessao import criar_tabelas
 from fila import to_fila
 from camara import to_camara
@@ -96,13 +96,12 @@ for db_pessoa in buscar_todas_pessoas():
         if db_camara.fila_atividade:
             fila = dict_filas[db_camara.fila_atividade]
             posicao_pessoas = dict_fila_pessoas[fila.atividade]
-            fila.fila[posicao_pessoas[pessoa.numero]] = pessoa
+            if pessoa.numero in posicao_pessoas.keys():
+                fila.fila[posicao_pessoas[pessoa.numero]] = pessoa
             camara = dict_camaras[db_pessoa.camara_id]
             camara.fila = fila
             camara.nome_fila = fila.atividade
     dict_pessoas[db_pessoa.numero] = pessoa
-
-
 
 set_camaras_chamando = set()
 set_audios_notificacoes = set()
@@ -175,6 +174,7 @@ def chamar_proximo(numero_camara):
         camara.chamar_atendido()
         set_camaras_chamando.add(camara)
         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+        atualizar_camara(camara)
         global ultima_camara_chamada
         ultima_camara_chamada = camara
     return camara.pessoa_em_atendimento.to_dict()
@@ -185,6 +185,7 @@ def avisado(numero_camara):
     if camara.estado == camara.avisar:
         camara.estado = camara.avisado
         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+        atualizar_camara(camara)
     return 'avisado'
 
 @app.route('/fechar_camara/<numero_camara>')
@@ -194,6 +195,7 @@ def fechar_camara(numero_camara):
         camara.estado = camara.fechada
         camara.pessoa_em_atendimento = None
         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+        atualizar_camara(camara)
     return 'fechar camara'
 
 @app.route('/bolinhas')
@@ -210,6 +212,7 @@ def bolinhas():
             camara.estado = camara.atendendo
         camara.numero_de_atendimentos -= 1
     # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    atualizar_camara(camara)
     return 'bolinhas atualizadas'
 
 @app.route('/deschamar/<numero_camara>')
@@ -238,6 +241,7 @@ def deschamar(numero_camara):
     camara.estado = camara.atendendo
     camara.fila.salvar_fila()
     # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    atualizar_camara(camara)
     return 'deschamado'
 
 @app.route('/aumentar_capacidade/<numero_camara>')
@@ -248,6 +252,7 @@ def aumentar_capacidade(numero_camara):
         if camara.estado != camara.atendendo and camara.numero_de_atendimentos > 0:
             camara.estado = camara.atendendo
     # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    atualizar_camara(camara)
     return 'aumentando'
 
 @app.route('/diminuir_capacidade/<numero_camara>')
@@ -258,6 +263,7 @@ def diminuir_capacidade(numero_camara):
         if camara.estado == camara.atendendo and camara.numero_de_atendimentos >= camara.capacidade_maxima:
             camara.estado = camara.avisar
     # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    atualizar_camara(camara)
     return 'diminuindo'
 
 @app.route('/reiniciar_tudo_confirmado')
@@ -266,10 +272,12 @@ def reiniciar_tudo_confirmado():
         camara.numero_de_atendimentos = 0
         camara.fechar()
         camara.capacidade_maxima = 5
+        atualizar_camara(camara)
     # fila_videncia.clear()
     # fila_prece.clear()
     for fila in dict_filas.values():
         fila.clear()
+        atualizar_fila(fila)
     # fila_prece.salvar_fila()
     # fila_videncia.salvar_fila()
     # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
@@ -288,11 +296,11 @@ def fun_fila_prece():
     # return fila_prece.to_dict()
     return dict_filas.get('prece').to_dict()
 
-@app.route('/remover_atendido')
-def remover_atendido():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    return 'remover atendido'
+# @app.route('/remover_atendido')
+# def remover_atendido():
+#     nome_fila = request.args.get('nome_fila')
+#     numero_atendido = int(request.args.get('numero_atendido'))
+#     return 'remover atendido'
 
 @app.route('/editar_atendido_confirmado')
 def editar_atendido_confirmado():
@@ -307,6 +315,8 @@ def editar_atendido_confirmado():
     # elif nome_fila == fila_prece.atividade:
     #     fila = fila_prece
     fila.editar_pessoa(numero_atendido, nome_atendido)
+    pessoa = dict_pessoas[numero_atendido]
+    atualizar_pessoa(pessoa)
     return 'atendido editado'
 
 @app.route('/remover_atendido_confirmado')
@@ -323,6 +333,7 @@ def remover_atendido_confirmado():
     # else: 
     #     return 'Fila incorreta!'
     fila.remover_pessoa(numero_atendido)
+    remover_pessoa_da_fila(numero_atendido, nome_fila)
     return 'atendido removido'
 
 @app.route('/reposicionar_atendido')

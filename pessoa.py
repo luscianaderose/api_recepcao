@@ -1,3 +1,6 @@
+from database.modelos.pessoa_modelo import buscar_pessoa_por_numero
+
+
 class Pessoa:
     riscado = 'riscado'
     atendendo = 'atendendo'
@@ -44,10 +47,28 @@ class Pessoa:
         return Pessoa()
 
 def to_pessoa(db_pessoa):
+    dupla = -1
+    if db_pessoa.dupla_numero != -1:
+        db_dupla = buscar_pessoa_por_numero(db_pessoa.dupla_numero)
+        dupla = Pessoa(
+            numero = db_dupla.numero,
+            nome = db_dupla.nome,
+            estado = db_dupla.estado,
+            observacao = db_dupla.observacao
+        )
+        pessoa = Pessoa(
+            numero = db_pessoa.numero, 
+            nome = db_pessoa.nome, 
+            estado = db_pessoa.estado, 
+            dupla = dupla, 
+            observacao = db_pessoa.observacao
+        )
+        dupla.dupla = pessoa
+        return pessoa
     return Pessoa(
         numero = db_pessoa.numero, 
         nome = db_pessoa.nome, 
         estado = db_pessoa.estado, 
-        dupla = db_pessoa.dupla, 
+        dupla = dupla, 
         observacao = db_pessoa.observacao
     )
