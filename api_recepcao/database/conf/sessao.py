@@ -11,7 +11,7 @@ def criar_engine():
     if engine:
         return
     
-    engine = create_engine('sqlite:///recepcao.db')
+    engine = create_engine('mysql://recepcao:senha123@db_recepcao/recepcao')
     
     return engine
 
@@ -21,7 +21,7 @@ def criar_sessao():
     if not engine:
         criar_engine()
 
-    Sessao = sessionmaker(bind=engine)
+    Sessao = sessionmaker(bind=engine, expire_on_commit=False)
     return Sessao()
 
 def criar_tabelas():

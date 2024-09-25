@@ -20,7 +20,8 @@ class Camara:
     def to_dict(self):
         return {
             "numero_camara": self.numero_camara,
-            "fila": self.fila.to_dict(),
+            #"fila": self.fila.to_dict(),
+            "fila": self.fila,
             "nome_fila": self.nome_fila,
             "pessoa_em_atendimento": self.pessoa_em_atendimento.to_dict() if self.pessoa_em_atendimento else None,
             "numero_de_atendimentos": self.numero_de_atendimentos,
@@ -104,5 +105,5 @@ def ler_camaras(nome_arquivo):
         return f.read().splitlines()
 
 def to_camara(db_camara):
-    return Camara(db_camara.numero, estado=db_camara.estado, capacidade_maxima=db_camara.capacidade)
+    return Camara(db_camara.numero, fila=db_camara.fila_atividade, estado=db_camara.estado, capacidade_maxima=db_camara.capacidade)
 

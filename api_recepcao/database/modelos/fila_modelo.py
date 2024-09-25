@@ -8,14 +8,14 @@ fila_pessoa = Table(
     'fila_pessoa',
     BaseModelo.metadata, 
     Column('posicao', Integer, primary_key=True, autoincrement=True),
-    Column('fila_atividade', String, ForeignKey('fila.atividade')),
+    Column('fila_atividade', String(30), ForeignKey('fila.atividade')),
     Column('pessoa_numero', Integer, ForeignKey('pessoa.numero'))
 )
 
 class FilaModelo(BaseModelo):
     __tablename__ = 'fila'
-    atividade = Column(String, primary_key=True)
-    nome_display = Column(String)
+    atividade = Column(String(30), primary_key=True)
+    nome_display = Column(String(30))
     proximo_numero = Column(Integer, default=1)
     pessoas = relationship('PessoaModelo', secondary=fila_pessoa, back_populates='fila')
     camaras = relationship('CamaraModelo', back_populates='fila')

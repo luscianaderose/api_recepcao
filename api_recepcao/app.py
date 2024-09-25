@@ -65,12 +65,12 @@ from api_recepcao.database.conf.sessao import criar_tabelas
 #     camara.estado = estado.strip()
 
 # Iniciando a criação de tabelas no banco de dados.
-criar_tabelas()
+# criar_tabelas()
 
 # Populando dados iniciais no banco de dados.
-popular_filas()
-popular_camaras()
-popular_pessoas()
+# popular_filas()
+# popular_camaras()
+# popular_pessoas()
 
 # Convertendo dados do banco para as classes originais.
 dict_filas = {}

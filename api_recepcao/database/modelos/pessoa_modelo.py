@@ -6,18 +6,31 @@ from .camara_modelo import CamaraModelo
 from api_recepcao.database.conf.sessao import criar_sessao, fechar_sessao
 
 
+# class PessoaModelo(BaseModelo):
+#     __tablename__ = 'pessoa'
+#     numero = Column(Integer, primary_key=True, autoincrement=True)
+#     nome = Column(String(100))
+#     dupla_numero = Column(Integer, ForeignKey('pessoa.numero'), nullable=True, default=None)
+#     #dupla_numero = Column(Integer, ForeignKey('pessoa.numero'), default=-1)
+#     estado = Column(String(30), default='aguardando')
+#     observacao = Column(String(200), default='')
+#     camara_id = Column(String(30), ForeignKey('camara.numero'))
+#     camara = relationship('CamaraModelo', back_populates='pessoas', foreign_keys=[camara_id])
+#     fila = relationship('FilaModelo', secondary=fila_pessoa, back_populates='pessoas')
+#     dupla = relationship('PessoaModelo', remote_side=[numero], backref='duplas')
+    #dupla = relationship('PessoaModelo', back_populates='dupla_numero')
+
 class PessoaModelo(BaseModelo):
     __tablename__ = 'pessoa'
     numero = Column(Integer, primary_key=True, autoincrement=True)
-    nome = Column(String)
-    dupla_numero = Column(Integer, ForeignKey('pessoa.numero'), default=-1)
-    estado = Column(String, default='aguardando')
-    observacao = Column(String, default='')
-    camara_id = Column(String, ForeignKey('camara.numero'))
+    nome = Column(String(100))
+    dupla_numero = Column(Integer, ForeignKey('pessoa.numero', name='fk_dupla_pessoa'), nullable=True, default=None)
+    estado = Column(String(30), default='aguardando')
+    observacao = Column(String(200), default='')
+    camara_id = Column(String(30), ForeignKey('camara.numero', name='fk_pessoa_camara'))
     camara = relationship('CamaraModelo', back_populates='pessoas', foreign_keys=[camara_id])
     fila = relationship('FilaModelo', secondary=fila_pessoa, back_populates='pessoas')
     dupla = relationship('PessoaModelo', remote_side=[numero], backref='duplas')
-    #dupla = relationship('PessoaModelo', back_populates='dupla_numero')
 
 def criar_pessoa(nome, camara_id):
     sessao = criar_sessao()
