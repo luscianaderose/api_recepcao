@@ -42,13 +42,10 @@ class Pessoa:
             return f'<b>{self.nome}</b> - {self.camara}'
         else:
             return f'{self.nome}'
-        
-    def to_pessoa(db_pessoa):
-        return Pessoa()
 
-def to_pessoa(db_pessoa):
-    dupla = -1
-    if db_pessoa.dupla_numero != -1:
+
+def to_pessoa(db_pessoa): # TODO setar referencia por ID ao inves de instanciar classe Pessoa
+    if db_pessoa.dupla_numero is not None:
         db_dupla = buscar_pessoa_por_numero(db_pessoa.dupla_numero)
         dupla = Pessoa(
             numero = db_dupla.numero,
@@ -69,6 +66,6 @@ def to_pessoa(db_pessoa):
         numero = db_pessoa.numero, 
         nome = db_pessoa.nome, 
         estado = db_pessoa.estado, 
-        dupla = dupla, 
+        dupla = None, 
         observacao = db_pessoa.observacao
     )

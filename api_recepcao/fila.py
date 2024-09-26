@@ -9,7 +9,7 @@ class Fila():
         self.nome_arquivo = nome_arquivo
         self.fila = {}
         self.proximo_numero = proximo_numero
-    
+
     def __repr__(self) -> str:
         return f'<Fila {self.atividade}>'
 
@@ -21,12 +21,11 @@ class Fila():
             "fila": {key:value.to_dict() for key,value in self.fila.items()},
             "proximo_numero": self.proximo_numero
         }
-    
+
     def __contains__(self, numero):
         return numero in self.fila
-    
-    
-    def adicionar_pessoa(self, pessoa, numero):
+
+    def adicionar_pessoa(self, pessoa, numero): # TODO isso deveria estar num repo como adicionar_pessoa por ex.
         for p in self.fila.values():
             if p.nome == pessoa.nome:
                 raise Exception('Não foi possível registrar porque o nome já existe.')
@@ -36,7 +35,7 @@ class Fila():
         self.proximo_numero += 1
         self.salvar_fila()
 
-    def remover_pessoa(self, numero):
+    def remover_pessoa(self, numero): # TODO isso deveria estar num repo como remover_pessoa por ex.
         if numero not in self.fila:
             raise Exception('Não foi possível remover porque a pessoa não existe.')
         pessoa = self.fila[numero]
@@ -45,7 +44,7 @@ class Fila():
         del self.fila[numero]
         self.salvar_fila()
 
-    def editar_pessoa(self, numero, nome):
+    def editar_pessoa(self, numero, nome): # TODO mover para repository pessoa
         for p in self.fila.values():
             if p.nome == nome:
                 return #Exception('Não foi possível registrar porque o nome já existe.')
@@ -56,7 +55,7 @@ class Fila():
 
     def values(self):
         return sorted(self.fila.values(), key=lambda p: p.numero)
-    
+
     def clear(self):
         self.fila.clear()
 
@@ -64,29 +63,29 @@ class Fila():
         if numero in self.fila:
             return self.fila[numero]
         return None
-    
-    def trocar_posicao(self, n1, n2, ignorar_duplas=False):
+
+    def trocar_posicao(self, n1, n2, ignorar_duplas=False): # TODO isso deveria estar um service trocar_pos por ex.
         if n1 not in self.fila or n2 not in self.fila:
             raise Exception('Não foi possível mover!')
         if n2 < n1:
             return self.trocar_posicao(n2, n1, ignorar_duplas)
         pessoa1 = self.fila[n1]
         pessoa2 = self.fila[n2]
-        if ignorar_duplas == False and pessoa1.dupla != n2 and (pessoa1.dupla != -1 or pessoa2.dupla != -1):
-            if pessoa1.dupla != -1 and pessoa2.dupla != -1: #p1+p2 tem dupla. Se tiver dupla e se for trocar com alguem que nao é a propria dupla
+        if ignorar_duplas == False and pessoa1.dupla != n2 and (pessoa1.dupla is not None or pessoa2.dupla is not None):
+            if pessoa1.dupla is not None and pessoa2.dupla is not None: #p1+p2 tem dupla. Se tiver dupla e se for trocar com alguem que nao é a propria dupla
                 self.trocar_posicao(n1, pessoa2.dupla, ignorar_duplas=True)
                 self.trocar_posicao(pessoa1.dupla, n2, ignorar_duplas=True)
-            elif pessoa1.dupla != -1: #somente a p1 tem dupla
+            elif pessoa1.dupla is not None: #somente a p1 tem dupla
                 self.trocar_posicao(n1, n2, ignorar_duplas=True)
                 self.trocar_posicao(n1, pessoa1.dupla, ignorar_duplas=True)
-            elif pessoa2.dupla != -1: #somente a p2 tem dupla
+            elif pessoa2.dupla is not None: #somente a p2 tem dupla
                 self.trocar_posicao(n1, n2, ignorar_duplas=True)
                 self.trocar_posicao(n2, pessoa2.dupla, ignorar_duplas=True)
             return 
-        if pessoa1.dupla != -1:
+        if pessoa1.dupla is not None:
             dupla = self.fila[pessoa1.dupla]
             dupla.dupla = n2
-        if pessoa2.dupla != -1:
+        if pessoa2.dupla is not None:
             dupla = self.fila[pessoa2.dupla]
             dupla.dupla = n1
         pessoa1.numero = n2
@@ -98,12 +97,12 @@ class Fila():
     def keys(self):
         return sorted(self.fila.keys())
     
-    def criar_dupla(self, n1, n2):
+    def criar_dupla(self, n1, n2): # TODO isso deveria estar um service dupla por ex.
         if n1 not in self.fila or n2 not in self.fila:
             raise Exception('Não foi possível criar dupla!')
         pessoa1 = self.fila[n1]
         pessoa2 = self.fila[n2]
-        if pessoa1.dupla != -1 or pessoa2.dupla != -1:
+        if pessoa1.dupla is not None or pessoa2.dupla is not None:
             raise Exception ('Não é possível criar dupla com uma pessoa de outra dupla!')
         if pessoa1.estado != pessoa1.aguardando or pessoa2.estado != pessoa2.aguardando:
             raise Exception('Não é possível criar dupla depois que a pessoa já foi chamada!')
@@ -111,7 +110,7 @@ class Fila():
         pessoa2.dupla = n1
         self.salvar_fila()
 
-    def cancelar_dupla(self, n1):
+    def cancelar_dupla(self, n1): # TODO isso deveria estar um service dupla por ex.
         if n1 not in self.fila:
             raise Exception ('Não foi possível cancelar a dupla!')
         pessoa1 = self.get(n1)
@@ -134,12 +133,12 @@ class Fila():
                 pessoa = Pessoa(int(numero), nome, estado, camara, int(dupla), int(asterisco), observacao)
                 self.adicionar_pessoa(pessoa, pessoa.numero)
 
-    def toggle_asterisco(self, numero_atendido):
-        pessoa = self.get(numero_atendido)
-        pessoa.asterisco = 0 if pessoa.asterisco else 1
-        self.salvar_fila()
+    # def toggle_asterisco(self, numero_atendido):
+    #     pessoa = self.get(numero_atendido)
+    #     pessoa.asterisco = 0 if pessoa.asterisco else 1
+    #     self.salvar_fila()
     
-    def adicionar_observacao(self, numero_atendido, observacao):
+    def adicionar_observacao(self, numero_atendido, observacao): # TODO isso deveria estar em Pessoa.
         pessoa = self.get(numero_atendido)
         pessoa.observacao = observacao
         self.salvar_fila()
@@ -150,11 +149,10 @@ class Fila():
                 if pessoa.numero == numero:
                     return index + 1
         return None
-    
+
 def to_fila(db_fila):
     return Fila(
         atividade=db_fila.atividade, 
         nome_display=db_fila.nome_display, 
         proximo_numero=db_fila.proximo_numero
     )
-    

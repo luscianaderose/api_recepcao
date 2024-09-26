@@ -1,3 +1,6 @@
+from api_recepcao.fila import to_fila
+
+
 class Camara:
     fechada = 'FECHADA'
     atendendo = 'ATENDENDO'
@@ -20,8 +23,8 @@ class Camara:
     def to_dict(self):
         return {
             "numero_camara": self.numero_camara,
-            #"fila": self.fila.to_dict(),
-            "fila": self.fila,
+            "fila": self.fila.to_dict(),
+            # "fila": self.fila,
             "nome_fila": self.nome_fila,
             "pessoa_em_atendimento": self.pessoa_em_atendimento.to_dict() if self.pessoa_em_atendimento else None,
             "numero_de_atendimentos": self.numero_de_atendimentos,
@@ -39,7 +42,7 @@ class Camara:
         self.estado = self.atendendo
 
 
-    def chamar_atendido(self):
+    def chamar_atendido(self): # TODO esse deveria ser um service tbm muito acoplamento
         '''Encontra a primeira pessoa da fila que não foi chamada, marca como chamada 
         e adiciona a self.pessoa_em_atendimento. Caso a pessoa tenha uma dupla, 
         a sua dupla também será marcada.'''
@@ -53,19 +56,18 @@ class Camara:
             return self.estado
         if self.pessoa_em_atendimento:
             self.pessoa_em_atendimento.estado = self.pessoa_em_atendimento.riscado
-            if self.pessoa_em_atendimento.dupla != -1:
+            if self.pessoa_em_atendimento.dupla is not None:
                 dupla = self.fila.get(self.pessoa_em_atendimento.dupla)
                 dupla.estado = dupla.riscado
-        else:
-            if self.fila.fila.get(1):
-                pessoa = self.fila.fila.get(1)
-                pessoa.estado = pessoa.aguardando
-                self.pessoa_em_atendimento = self.fila.fila.get(1)
+        elif self.fila.fila.get(1):
+            pessoa = self.fila.fila.get(1)
+            pessoa.estado = pessoa.aguardando
+            self.pessoa_em_atendimento = self.fila.fila.get(1)
         self.pessoa_em_atendimento = pessoa
         self.pessoa_em_atendimento.camara = self.numero_camara
         self.pessoa_em_atendimento.estado = pessoa.atendendo
         self.numero_de_atendimentos += 1
-        if self.pessoa_em_atendimento.dupla != -1:
+        if self.pessoa_em_atendimento.dupla is not None:
             dupla = self.fila.get(self.pessoa_em_atendimento.dupla)
             dupla.camara = self.numero_camara
             dupla.estado = dupla.atendendo
@@ -94,16 +96,6 @@ class Camara:
             else:
                 bolinhas.append('&#9898;')
         return ''.join(bolinhas)
-    
-def salvar_camaras(dict_camaras, nome_arquivo):
-    with open(nome_arquivo, 'w') as f:
-        for camara in dict_camaras.values():
-            f.write(f'{camara.numero_camara},{camara.pessoa_em_atendimento.numero if camara.pessoa_em_atendimento is not None else ""},{camara.numero_de_atendimentos},{camara.estado},{camara.capacidade_maxima}\n')
 
-def ler_camaras(nome_arquivo):
-    with open(nome_arquivo, 'r') as f:
-        return f.read().splitlines()
 
-def to_camara(db_camara):
-    return Camara(db_camara.numero, fila=db_camara.fila_atividade, estado=db_camara.estado, capacidade_maxima=db_camara.capacidade)
 

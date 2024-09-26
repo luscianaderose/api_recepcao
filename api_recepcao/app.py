@@ -4,7 +4,7 @@ from flask_cors import CORS
 from datetime import datetime, date, timedelta
 from api_recepcao.pessoa import Pessoa, to_pessoa
 from api_recepcao.fila import Fila, to_fila
-from api_recepcao.camara import Camara, salvar_camaras, ler_camaras, to_camara
+from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
 # from pessoa import Pessoa
 # from fila import Fila
 # from camara import Camara, salvar_camaras, ler_camaras
@@ -12,10 +12,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from api_recepcao.database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
-from api_recepcao.database.modelos.camara_modelo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
+from api_recepcao.repository.camara_repo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
 from api_recepcao.database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
 from api_recepcao.database.conf.sessao import criar_tabelas
+from api_recepcao.database.conf.setup import setup_db
 
+
+# setup_db()
 
 # PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
 # try:
@@ -83,7 +86,10 @@ for db_fila in buscar_todas_filas():
     dict_fila_pessoas[db_fila.atividade] = buscar_pessoas_da_fila_por_atividade(db_fila.atividade)
 
 for camara in buscar_todas_camaras():
-    dict_camaras[camara.numero] = to_camara(camara)
+    dict_camaras[camara.numero_camara] = camara
+
+def get_dict_camaras():
+    return {camara.numero_camara: camara for camara in buscar_todas_camaras()}
 
 for db_pessoa in buscar_todas_pessoas():
     pessoa = to_pessoa(db_pessoa)
@@ -95,7 +101,7 @@ for db_pessoa in buscar_todas_pessoas():
             posicao_pessoas = dict_fila_pessoas[fila.atividade]
             if pessoa.numero in posicao_pessoas.keys():
                 fila.fila[posicao_pessoas[pessoa.numero]] = pessoa
-            camara = dict_camaras[db_pessoa.camara_id]
+            camara = dict_camaras[db_pessoa.camara_id] # TODO problematico, deveria ser só o ID da camara
             camara.fila = fila
             camara.nome_fila = fila.atividade
     dict_pessoas[db_pessoa.numero] = pessoa
@@ -137,7 +143,7 @@ def calendario():
 
 @app.route('/camaras')
 def camaras():
-    return [camara.to_dict() for camara in dict_camaras.values()]
+    return [camara.to_dict() for camara in get_dict_camaras().values()]
     # for camara in dict_camaras.values():
     #     print('camara.to_dict(): ', camara.to_dict(), '\n')
     # return ''
@@ -148,7 +154,7 @@ def camaras():
 # def apertou_botao():
 #     data = request.json
 #     numero_camara = data.get('numero')
-#     camara = dict_camaras[numero_camara]
+#     camara = get_dict_camaras()[numero_camara]
 #     if camara.estado == camara.atendendo:
 #         camara.chamar_atendido()
 #         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
@@ -158,14 +164,15 @@ def camaras():
 
 @app.route('/abrir_camara/<numero_camara>')
 def abrir_camara(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara]
     camara.abrir()
     # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
+    atualizar_camara(camara)
     return 'camara aberta'
 
 @app.route('/chamar_proximo/<numero_camara>')
 def chamar_proximo(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara] # TODO mudar para algo como get_camara(camara)
     # print('numero_camara: ', type(numero_camara))
     if camara.estado == camara.atendendo:
         camara.chamar_atendido()
@@ -178,7 +185,7 @@ def chamar_proximo(numero_camara):
 
 @app.route('/avisado/<numero_camara>')
 def avisado(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara]
     if camara.estado == camara.avisar:
         camara.estado = camara.avisado
         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
@@ -187,7 +194,7 @@ def avisado(numero_camara):
 
 @app.route('/fechar_camara/<numero_camara>')
 def fechar_camara(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara]
     if camara.estado == camara.avisado:
         camara.estado = camara.fechada
         camara.pessoa_em_atendimento = None
@@ -214,20 +221,20 @@ def bolinhas():
 
 @app.route('/deschamar/<numero_camara>')
 def deschamar(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara]
     if not camara.pessoa_em_atendimento:
         return f'A câmara {numero_camara} não está atendendo ninguém.'
     pessoa = camara.pessoa_em_atendimento
     pessoa.estado = pessoa.aguardando
     pessoa.camara = None
-    if pessoa.dupla != -1:
+    if pessoa.dupla is not None:
         dupla = camara.fila.get(pessoa.dupla)
         dupla.estado = dupla.aguardando
         dupla.camara = None
     for pessoa in camara.fila.values()[::-1]:
         if pessoa.estado == pessoa.riscado and pessoa.camara == numero_camara:
             pessoa.estado = pessoa.atendendo
-            if pessoa.dupla != -1:
+            if pessoa.dupla is not None:
                 dupla = camara.fila.get(pessoa.dupla)
                 dupla.estado = dupla.atendendo
             camara.pessoa_em_atendimento = pessoa
@@ -243,7 +250,7 @@ def deschamar(numero_camara):
 
 @app.route('/aumentar_capacidade/<numero_camara>')
 def aumentar_capacidade(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara]
     if camara.capacidade_maxima < 20:
         camara.capacidade_maxima += 1
         if camara.estado != camara.atendendo and camara.numero_de_atendimentos > 0:
@@ -254,7 +261,7 @@ def aumentar_capacidade(numero_camara):
 
 @app.route('/diminuir_capacidade/<numero_camara>')
 def diminuir_capacidade(numero_camara):
-    camara = dict_camaras[numero_camara]
+    camara = get_dict_camaras()[numero_camara]
     if camara.capacidade_maxima > 3:
         camara.capacidade_maxima -= 1
         if camara.estado == camara.atendendo and camara.numero_de_atendimentos >= camara.capacidade_maxima:
@@ -311,7 +318,7 @@ def editar_atendido_confirmado():
     #     fila = fila_videncia
     # elif nome_fila == fila_prece.atividade:
     #     fila = fila_prece
-    fila.editar_pessoa(numero_atendido, nome_atendido)
+    fila.editar_pessoa(numero_atendido, nome_atendido) # TODO 3 steps para 1 ação com 3 side effects? muito errado
     pessoa = dict_pessoas[numero_atendido]
     atualizar_pessoa(pessoa)
     return 'atendido editado'
@@ -410,7 +417,7 @@ def adicionar_atendido():
     numero = fila.proximo_numero
     pessoa = Pessoa(numero, nome_atendido)
     try:
-        fila.adicionar_pessoa(pessoa, numero)
+        fila.adicionar_pessoa(pessoa, numero) # TODO salvar no banco e usar pessoa_repo para fazer tudo 
     except Exception as exc:
         return str(exc)
     return 'atendido adicionado'
@@ -427,7 +434,7 @@ def observacao():
     #     fila = fila_videncia
     # elif nome_fila == fila_prece.atividade:
     #     fila = fila_prece
-    fila.adicionar_observacao(numero_atendido, observacao)
+    fila.adicionar_observacao(numero_atendido, observacao) # TODO deveria ser pessoa.adicionar_observacao
     return 'observação adicionada'
 
 @app.route('/desriscar')
@@ -445,7 +452,7 @@ def desriscar():
         pessoa = fila.get(numero_atendido)
         pessoa.estado = pessoa.aguardando
         pessoa.camara = None
-        if pessoa.dupla != -1:
+        if pessoa.dupla is not None:
             dupla = fila.get(pessoa.dupla)
             dupla.estado = dupla.aguardando
             dupla.camara = None

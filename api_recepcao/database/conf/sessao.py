@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,7 +12,9 @@ def criar_engine():
     if engine:
         return
     
-    engine = create_engine('mysql://recepcao:senha123@db_recepcao/recepcao')
+    engine = create_engine(
+        os.environ.get('DATABASE_URL') or 'sqlite:///recepcao.db'
+    )
     
     return engine
 
