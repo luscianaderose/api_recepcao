@@ -1,462 +1,327 @@
-import os
 from flask import Flask, request
 from flask_cors import CORS
 from datetime import datetime, date, timedelta
-from api_recepcao.pessoa import Pessoa, to_pessoa
-from api_recepcao.fila import Fila, to_fila
-from api_recepcao.camara import Camara, salvar_camaras, ler_camaras
-# from pessoa import Pessoa
-# from fila import Fila
-# from camara import Camara, salvar_camaras, ler_camaras
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
-from api_recepcao.database.modelos.fila_modelo import popular_filas, buscar_todas_filas, buscar_pessoas_da_fila_por_atividade, atualizar_fila, remover_pessoa_da_fila
-from api_recepcao.repository.camara_repo import popular_camaras, buscar_todas_camaras, buscar_camaras_por_numero, atualizar_camara
-from api_recepcao.database.modelos.pessoa_modelo import popular_pessoas, buscar_todas_pessoas, atualizar_pessoa
-from api_recepcao.database.conf.sessao import criar_tabelas
 from api_recepcao.database.conf.setup import setup_db
+from api_recepcao.entities.camara import Camara
+from api_recepcao.entities.pessoa import Pessoa
+from api_recepcao.service.fila_service import get_filas, get_fila, salvar_fila
+from api_recepcao.service.camara_service import get_dict_camaras, salvar_camara
+from api_recepcao.service.pessoa_service import (
+    get_pessoa,
+    get_dict_pessoas,
+    get_pessoa_com_posicao,
+    salvar_pessoa,
+    get_pessoas_fila,
+    add_pessoa,
+    deletar_pessoa,
+)
+from api_recepcao.service.chamar_atendido import chamar_atendido
+from api_recepcao.service.trocar_posicao import trocar_posicao
+from api_recepcao.service.dupla_service import criar_dupla, cancelar_dupla
 
 
-# setup_db()
-
-# PASTA_ARQUIVOS = os.path.join(os.path.expanduser('~'), '.recepcao-camaras')
-# try:
-#     os.makedirs(PASTA_ARQUIVOS) 
-# except FileExistsError:
-#     pass
-
-# ARQUIVO_FILA_VIDENCIA = os.path.join(PASTA_ARQUIVOS, 'Fila-videncia.csv')
-# ARQUIVO_FILA_PRECE = os.path.join(PASTA_ARQUIVOS, 'Fila-prece.csv')
-# ARQUIVO_CAMARAS = os.path.join(PASTA_ARQUIVOS, 'Camaras-info.csv')
-
-# for arquivo in [ARQUIVO_FILA_VIDENCIA, ARQUIVO_FILA_PRECE, ARQUIVO_CAMARAS]:
-#     with open(arquivo, 'a+'):
-#         pass
-
-# fila_videncia = Fila('videncia', 'Vidência', ARQUIVO_FILA_VIDENCIA)
-# fila_prece = Fila('prece', 'Prece', ARQUIVO_FILA_PRECE)
-
-# fila_videncia.ler_fila()
-# fila_prece.ler_fila()
-
-# if fila_videncia.fila:
-#     fila_videncia.proximo_numero = fila_videncia.values()[-1].numero + 1
-# if fila_prece.fila:
-#     fila_prece.proximo_numero = fila_prece.values()[-1].numero + 1
-
-# camara2 = Camara('2', fila_videncia, fila_videncia.atividade)
-# camara4 = Camara('4', fila_videncia, fila_videncia.atividade)
-# camara3 = Camara('3', fila_prece, fila_prece.atividade)
-# camara3A = Camara('3A', fila_prece, fila_prece.atividade)
-
-# dict_camaras = {
-#     '2':camara2,
-#     '4':camara4,
-#     '3':camara3,
-#     '3A':camara3A,
-# }
-
-# dados_camaras = ler_camaras(ARQUIVO_CAMARAS)
-
-# for linha in dados_camaras:
-#     numero_camara, pessoa_em_atendimento, numero_de_atendimentos, estado, capacidade_maxima = linha.split(',')
-#     camara = dict_camaras[numero_camara.strip()]
-#     camara.capacidade_maxima = int(capacidade_maxima.strip())
-#     camara.pessoa_em_atendimento = camara.fila.get(int(pessoa_em_atendimento)) if pessoa_em_atendimento else None
-#     camara.numero_de_atendimentos = int(numero_de_atendimentos.strip())
-#     camara.estado = estado.strip()
-
-# Iniciando a criação de tabelas no banco de dados.
-# criar_tabelas()
-
-# Populando dados iniciais no banco de dados.
-# popular_filas()
-# popular_camaras()
-# popular_pessoas()
-
-# Convertendo dados do banco para as classes originais.
-dict_filas = {}
-dict_fila_pessoas = {}
-dict_camaras = {}
-dict_pessoas = {}
-
-for db_fila in buscar_todas_filas():
-    dict_filas[db_fila.atividade] = to_fila(db_fila)
-    dict_fila_pessoas[db_fila.atividade] = buscar_pessoas_da_fila_por_atividade(db_fila.atividade)
-
-for camara in buscar_todas_camaras():
-    dict_camaras[camara.numero_camara] = camara
-
-def get_dict_camaras():
-    return {camara.numero_camara: camara for camara in buscar_todas_camaras()}
-
-for db_pessoa in buscar_todas_pessoas():
-    pessoa = to_pessoa(db_pessoa)
-    if db_pessoa.camara_id:
-        pessoa.camara = db_pessoa.camara_id #dict_camaras[db_pessoa.camara_id]
-        db_camara = buscar_camaras_por_numero(db_pessoa.camara_id)
-        if db_camara.fila_atividade:
-            fila = dict_filas[db_camara.fila_atividade]
-            posicao_pessoas = dict_fila_pessoas[fila.atividade]
-            if pessoa.numero in posicao_pessoas.keys():
-                fila.fila[posicao_pessoas[pessoa.numero]] = pessoa
-            camara = dict_camaras[db_pessoa.camara_id] # TODO problematico, deveria ser só o ID da camara
-            camara.fila = fila
-            camara.nome_fila = fila.atividade
-    dict_pessoas[db_pessoa.numero] = pessoa
+setup_db()
 
 set_camaras_chamando = set()
 set_audios_notificacoes = set()
 
-nomes = ('SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO', 'DOMINGO')
 
 def get_data_hora_atual():
+    dias_da_semana = (
+        "SEGUNDA",
+        "TERÇA",
+        "QUARTA",
+        "QUINTA",
+        "SEXTA",
+        "SÁBADO",
+        "DOMINGO",
+    )
     dia_semana = date.today().weekday()
     data_e_hora_atuais = datetime.utcnow() + timedelta(hours=-3)
-    dia_semana_usar = nomes[dia_semana]
-    data_e_hora_em_texto = data_e_hora_atuais.strftime('%d %B %H:%M').upper()
-    return dia_semana_usar + ' ' + data_e_hora_em_texto
-
-def limitar_botao_chamar_proximo():
-    return request.json.get('numero')
+    dia_semana_usar = dias_da_semana[dia_semana]
+    data_e_hora_em_texto = data_e_hora_atuais.strftime("%d %B %H:%M").upper()
+    return dia_semana_usar + " " + data_e_hora_em_texto
 
 
-app=Flask(__name__)
+app = Flask(__name__)
 CORS(app)
 
 
-limiter = Limiter(get_remote_address, app=app, default_limits=['1000 per day', '500 per hour'], storage_uri='memory://')
-
-
-@app.route('/')
+@app.route("/")
 def index():
-    return {
-        'mensagem': 'página inicial'
-    }
+    return "Bem Vindo(a) à API Recepção"
 
-@app.route('/calendario')
+
+# Deveria estar na api de calendário
+@app.route("/calendario")
 def calendario():
     return {
-        'data_e_hora': get_data_hora_atual(),
+        "data_e_hora": get_data_hora_atual(),
     }
 
-@app.route('/camaras')
+
+@app.route("/pessoas")
+def pessoas():
+    return {pessoa.numero: pessoa.to_dict() for pessoa in get_dict_pessoas().values()}
+
+
+@app.route("/pessoas/<numero_pessoa>")
+def pessoa(numero_pessoa):
+    return get_pessoa(numero_pessoa=numero_pessoa).to_dict()
+
+
+@app.route("/camaras")
 def camaras():
-    return [camara.to_dict() for camara in get_dict_camaras().values()]
-    # for camara in dict_camaras.values():
-    #     print('camara.to_dict(): ', camara.to_dict(), '\n')
-    # return ''
+    return {camara.numero: camara.to_dict() for camara in get_dict_camaras().values()}
 
 
-# @app.route('/camara', methods=['POST'])
-# @limiter.limit('1/minute', key_func=limitar_botao_chamar_proximo)
-# def apertou_botao():
-#     data = request.json
-#     numero_camara = data.get('numero')
-#     camara = get_dict_camaras()[numero_camara]
-#     if camara.estado == camara.atendendo:
-#         camara.chamar_atendido()
-#         # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-#         global ultima_camara_chamada
-#         ultima_camara_chamada = camara
-#     return {'message': f'Camara: {numero_camara}'}
-
-@app.route('/abrir_camara/<numero_camara>')
+@app.route("/abrir_camara/<numero_camara>")
 def abrir_camara(numero_camara):
     camara = get_dict_camaras()[numero_camara]
     camara.abrir()
-    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-    atualizar_camara(camara)
-    return 'camara aberta'
+    salvar_camara(camara)
+    return camara.to_dict()
 
-@app.route('/chamar_proximo/<numero_camara>')
+
+@app.route("/chamar_proximo/<numero_camara>")
 def chamar_proximo(numero_camara):
-    camara = get_dict_camaras()[numero_camara] # TODO mudar para algo como get_camara(camara)
-    # print('numero_camara: ', type(numero_camara))
+    camara = get_dict_camaras()[numero_camara]
     if camara.estado == camara.atendendo:
-        camara.chamar_atendido()
+        chamar_atendido(camara.numero)
         set_camaras_chamando.add(camara)
-        # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-        atualizar_camara(camara)
         global ultima_camara_chamada
         ultima_camara_chamada = camara
-    return camara.pessoa_em_atendimento.to_dict()
+        camara = get_dict_camaras()[numero_camara]
+    return (
+        camara.pessoa_em_atendimento.to_dict() if camara.pessoa_em_atendimento else {}
+    )
 
-@app.route('/avisado/<numero_camara>')
+
+@app.route("/avisado/<numero_camara>")
 def avisado(numero_camara):
     camara = get_dict_camaras()[numero_camara]
     if camara.estado == camara.avisar:
         camara.estado = camara.avisado
-        # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-        atualizar_camara(camara)
-    return 'avisado'
+        salvar_camara(camara)
+    return camara.to_dict() if camara else {}
 
-@app.route('/fechar_camara/<numero_camara>')
+
+@app.route("/fechar_camara/<numero_camara>")
 def fechar_camara(numero_camara):
     camara = get_dict_camaras()[numero_camara]
     if camara.estado == camara.avisado:
         camara.estado = camara.fechada
         camara.pessoa_em_atendimento = None
-        # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-        atualizar_camara(camara)
-    return 'fechar camara'
+        salvar_camara(camara)
+    return camara.to_dict() if camara else {}
 
-@app.route('/bolinhas')
+
+@app.route("/bolinhas")
 def bolinhas():
-    modo = request.args.get('modo')
-    numero_camara = request.args.get('numero_camara')
-    camara = dict_camaras.get(numero_camara)
-    if modo == 'adicao' and camara.numero_de_atendimentos < camara.capacidade_maxima:
+    modo = request.args.get("modo")
+    numero_camara = request.args.get("numero_camara")
+    camara = get_dict_camaras()[numero_camara]
+    if modo == "adicao" and camara.numero_de_atendimentos < camara.capacidade_maxima:
         camara.numero_de_atendimentos += 1
         if camara.numero_de_atendimentos >= camara.capacidade_maxima:
             camara.estado = camara.avisar
-    elif modo == 'subtracao' and camara.numero_de_atendimentos > 0:
+    elif modo == "subtracao" and camara.numero_de_atendimentos > 0:
         if camara.estado != camara.atendendo:
             camara.estado = camara.atendendo
         camara.numero_de_atendimentos -= 1
-    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-    atualizar_camara(camara)
-    return 'bolinhas atualizadas'
+    salvar_camara(camara)
+    return camara.to_dict() if camara else {}
 
-@app.route('/deschamar/<numero_camara>')
+
+@app.route("/deschamar/<numero_camara>")
 def deschamar(numero_camara):
     camara = get_dict_camaras()[numero_camara]
+
     if not camara.pessoa_em_atendimento:
-        return f'A câmara {numero_camara} não está atendendo ninguém.'
+        return f"A câmara {numero_camara} não está atendendo ninguém."
+
     pessoa = camara.pessoa_em_atendimento
-    pessoa.estado = pessoa.aguardando
-    pessoa.camara = None
-    if pessoa.dupla is not None:
-        dupla = camara.fila.get(pessoa.dupla)
-        dupla.estado = dupla.aguardando
-        dupla.camara = None
-    for pessoa in camara.fila.values()[::-1]:
-        if pessoa.estado == pessoa.riscado and pessoa.camara == numero_camara:
+    pessoa.estado = Pessoa.aguardando
+    pessoa.numero_camara = None
+    salvar_pessoa(pessoa)
+
+    if pessoa.dupla_numero:
+        # pessoa_dupla = camara.fila.get(pessoa.dupla_numero)
+        pessoa_dupla = get_pessoa(pessoa.dupla_numero)
+        pessoa_dupla.estado = pessoa_dupla.aguardando
+        pessoa_dupla.numero_camara = None
+        salvar_pessoa(pessoa_dupla)
+
+    for pessoa in get_pessoas_fila(pessoa.fila_atividade)[::-1]:
+        if pessoa.estado == pessoa.riscado and pessoa.numero_camara == numero_camara:
             pessoa.estado = pessoa.atendendo
-            if pessoa.dupla is not None:
-                dupla = camara.fila.get(pessoa.dupla)
-                dupla.estado = dupla.atendendo
+            if pessoa.dupla_numero:
+                pessoa_dupla = camara.fila.get(pessoa.dupla_numero)
+                pessoa_dupla.estado = pessoa_dupla.atendendo
+                salvar_pessoa(pessoa=pessoa_dupla)
             camara.pessoa_em_atendimento = pessoa
+
+            salvar_pessoa(pessoa=pessoa)
+            salvar_camara(camara=camara)
             break
     else:
         camara.pessoa_em_atendimento = None
     camara.numero_de_atendimentos -= 1
     camara.estado = camara.atendendo
-    camara.fila.salvar_fila()
-    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-    atualizar_camara(camara)
-    return 'deschamado'
+    salvar_camara(camara=camara)
+    return camara.to_dict() if camara else {}
 
-@app.route('/aumentar_capacidade/<numero_camara>')
+
+@app.route("/aumentar_capacidade/<numero_camara>")
 def aumentar_capacidade(numero_camara):
     camara = get_dict_camaras()[numero_camara]
     if camara.capacidade_maxima < 20:
         camara.capacidade_maxima += 1
         if camara.estado != camara.atendendo and camara.numero_de_atendimentos > 0:
             camara.estado = camara.atendendo
-    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-    atualizar_camara(camara)
-    return 'aumentando'
+    salvar_camara(camara=camara)
+    return camara.to_dict() if camara else {}
 
-@app.route('/diminuir_capacidade/<numero_camara>')
+
+@app.route("/diminuir_capacidade/<numero_camara>")
 def diminuir_capacidade(numero_camara):
     camara = get_dict_camaras()[numero_camara]
     if camara.capacidade_maxima > 3:
         camara.capacidade_maxima -= 1
-        if camara.estado == camara.atendendo and camara.numero_de_atendimentos >= camara.capacidade_maxima:
+        if (
+            camara.estado == camara.atendendo
+            and camara.numero_de_atendimentos >= camara.capacidade_maxima
+        ):
             camara.estado = camara.avisar
-    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-    atualizar_camara(camara)
-    return 'diminuindo'
+    salvar_camara(camara=camara)
+    return camara.to_dict() if camara else {}
 
-@app.route('/reiniciar_tudo_confirmado')
+
+@app.route("/reiniciar_tudo")
 def reiniciar_tudo_confirmado():
-    for camara in dict_camaras.values():
+    for camara in get_dict_camaras().values():
         camara.numero_de_atendimentos = 0
         camara.fechar()
         camara.capacidade_maxima = 5
-        atualizar_camara(camara)
-    # fila_videncia.clear()
-    # fila_prece.clear()
-    for fila in dict_filas.values():
+        salvar_camara(camara=camara)
+
+    for fila in get_filas().values():
         fila.clear()
-        atualizar_fila(fila)
-    # fila_prece.salvar_fila()
-    # fila_videncia.salvar_fila()
-    # salvar_camaras(dict_camaras, ARQUIVO_CAMARAS)
-    return 'reiniciado'
+        for pessoa in get_pessoas_fila(fila_atividade=fila.atividade):
+            deletar_pessoa(pessoa_numero=pessoa.numero)
+        salvar_fila(fila=fila)
+    return "reiniciado"
 
-@app.route('/fila_videncia')
+
+@app.route("/fila_videncia")
 def fun_fila_videncia():
-    # return fila_videncia.to_dict()
-    return dict_filas.get('videncia').to_dict()
-    # for fila in dict_filas.get('videncia'):
-    #     print(fila.to_dict())
-    # return ''
+    return get_fila("videncia").to_dict()
 
-@app.route('/fila_prece')
+
+@app.route("/fila_prece")
 def fun_fila_prece():
-    # return fila_prece.to_dict()
-    return dict_filas.get('prece').to_dict()
+    return get_fila("prece").to_dict()
 
-# @app.route('/remover_atendido')
-# def remover_atendido():
-#     nome_fila = request.args.get('nome_fila')
-#     numero_atendido = int(request.args.get('numero_atendido'))
-#     return 'remover atendido'
 
-@app.route('/editar_atendido_confirmado')
+@app.route("/editar_atendido")
 def editar_atendido_confirmado():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    nome_atendido = request.args.get('nome_atendido')
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    fila.editar_pessoa(numero_atendido, nome_atendido) # TODO 3 steps para 1 ação com 3 side effects? muito errado
-    pessoa = dict_pessoas[numero_atendido]
-    atualizar_pessoa(pessoa)
-    return 'atendido editado'
+    numero_atendido = int(request.args.get("numero_atendido"))
+    nome_atendido = request.args.get("nome_atendido")
+    pessoa = get_pessoa(numero_pessoa=numero_atendido)
+    pessoa.nome = nome_atendido
+    salvar_pessoa(pessoa=pessoa)
+    return pessoa.to_dict()
 
-@app.route('/remover_atendido_confirmado')
+
+@app.route("/remover_atendido")
 def remover_atendido_confirmado():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    # else: 
-    #     return 'Fila incorreta!'
-    fila.remover_pessoa(numero_atendido)
-    remover_pessoa_da_fila(numero_atendido, nome_fila)
-    return 'atendido removido'
+    numero_atendido = int(request.args.get("numero_atendido"))
+    deletar_pessoa(pessoa_numero=numero_atendido)
+    return f"Atendido {numero_atendido} removido"
 
-@app.route('/reposicionar_atendido')
+
+@app.route("/reposicionar_atendido")
 def reposicionar_atendido():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    mover_para = request.args.get('mover_para')
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    # else: 
-    #     return 'Fila incorreta!'
-    keys = fila.keys()
-    indice = keys.index(numero_atendido)
-    if mover_para == 'cima':
-        if indice == 0:
-            return 'Não é possível subir a posição do primeiro nome da lista.'
-        fila.trocar_posicao(numero_atendido, keys[indice - 1])
-    elif mover_para == 'baixo':
-        if indice == len(keys) - 1:
-            return 'Não é possível descer a posição do último nome da lista.'
-        fila.trocar_posicao(numero_atendido, keys[indice + 1])
-    return 'atendido reposicionado'
+    numero_atendido = int(request.args.get("numero_atendido"))
+    mover_para = request.args.get("mover_para")
 
-@app.route('/criar_dupla')
-def criar_dupla():
-    nome_fila_dupla = request.args.get('nome_fila_dupla')
-    numero_dupla = int(request.args.get('numero_dupla'))
-    numero_atendido = int(request.args.get('numero_atendido'))
-    fila = dict_filas.get(nome_fila_dupla)
-    if not fila:
-        return f'Fila {nome_fila_dupla} não existe!'
-    # if nome_fila_dupla == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila_dupla == fila_prece.atividade:
-    #     fila = fila_prece
-    keys = fila.keys()
-    indice = keys.index(numero_atendido)
-    indice_dupla = keys.index(numero_dupla)
-    if not (indice_dupla == indice + 1 or indice_dupla == indice - 1):
-        return 'Não é possível criar dupla.'
-    try: fila.criar_dupla(numero_atendido, numero_dupla)
-    except Exception as exc: return str(exc) + '<br><br>'
-    return 'dupla criada'
+    pessoa_fila = get_pessoa_com_posicao(numero_pessoa=numero_atendido)
 
-@app.route('/cancelar_dupla')
-def cancelar_dupla():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    fila.cancelar_dupla(numero_atendido)
-    return 'Dupla cancelada'
+    if mover_para == "cima":
+        numero_pessoa_anterior = pessoa_fila.posicao - 1
+        if numero_pessoa_anterior >= 1:
+            trocar_posicao(numero_atendido, numero_pessoa_anterior)
+        else:
+            return f"Atendido {numero_atendido} não pode ser movido para cima"
+    elif mover_para == "baixo":
+        numero_pessoa_posterior = pessoa_fila.posicao + 1
+        trocar_posicao(numero_atendido, numero_pessoa_posterior)
 
-@app.route('/adicionar_atendido')
+    return "Atendido Reposicionado"
+
+
+@app.route("/criar_dupla")
+def fun_criar_dupla():
+    numero_dupla = int(request.args.get("numero_dupla"))
+    numero_atendido = int(request.args.get("numero_atendido"))
+    criar_dupla(numero_dupla, numero_atendido)
+    return "Dupla Criada"
+
+
+@app.route("/cancelar_dupla")
+def fun_cancelar_dupla():
+    numero_atendido = int(request.args.get("numero_atendido"))
+    cancelar_dupla(numero_atendido)
+    return "Dupla cancelada"
+
+
+@app.route("/adicionar_atendido")
 def adicionar_atendido():
-    nome_fila = request.args.get('nome_fila')
-    nome_atendido = request.args.get('nome_atendido').upper()
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    # else: 
-    #     return 'Fila incorreta!'
-    numero = fila.proximo_numero
-    pessoa = Pessoa(numero, nome_atendido)
-    try:
-        fila.adicionar_pessoa(pessoa, numero) # TODO salvar no banco e usar pessoa_repo para fazer tudo 
-    except Exception as exc:
-        return str(exc)
-    return 'atendido adicionado'
+    nome_fila = request.args.get("nome_fila")
+    nome_atendido = request.args.get("nome_atendido")
 
-@app.route('/observacao')
+    fila = get_fila(nome_fila)
+    if fila:
+        pessoa = Pessoa(numero=None, nome=nome_atendido, fila_atividade=fila.atividade)
+        pessoa = add_pessoa(pessoa=pessoa)
+    return pessoa.to_dict() or {}
+
+
+@app.route("/observacao")
 def observacao():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    observacao = request.args.get('observacao')
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    fila.adicionar_observacao(numero_atendido, observacao) # TODO deveria ser pessoa.adicionar_observacao
-    return 'observação adicionada'
+    numero_atendido = int(request.args.get("numero_atendido"))
+    observacao = request.args.get("observacao")
 
-@app.route('/desriscar')
+    pessoa = get_pessoa(numero_pessoa=numero_atendido)
+    pessoa.observacao = observacao
+    salvar_pessoa(pessoa=pessoa)
+
+    return pessoa.to_dict() or {}
+
+
+@app.route("/desriscar")
 def desriscar():
-    nome_fila = request.args.get('nome_fila')
-    numero_atendido = int(request.args.get('numero_atendido'))
-    fila = dict_filas.get(nome_fila)
-    if not fila:
-        return f'Fila {nome_fila} não existe!'
-    # if nome_fila == fila_videncia.atividade:
-    #     fila = fila_videncia
-    # elif nome_fila == fila_prece.atividade:
-    #     fila = fila_prece
-    if numero_atendido in fila:
-        pessoa = fila.get(numero_atendido)
-        pessoa.estado = pessoa.aguardando
-        pessoa.camara = None
-        if pessoa.dupla is not None:
-            dupla = fila.get(pessoa.dupla)
-            dupla.estado = dupla.aguardando
-            dupla.camara = None
-        fila.salvar_fila()
-        return 'desriscado'
-    return 'Não foi possível desriscar esse nome!'
+    nome_fila = request.args.get("nome_fila")
+    numero_atendido = int(request.args.get("numero_atendido"))
 
+    pessoas_fila = [
+        pessoa.numero for pessoa in get_pessoas_fila(fila_atividade=nome_fila)
+    ]
+
+    print(pessoas_fila)
+    if numero_atendido in pessoas_fila:
+        pessoa = get_pessoa(numero_pessoa=numero_atendido)
+        pessoa.estado = pessoa.aguardando
+        pessoa.numero_camara = None
+        if pessoa.dupla_numero:
+            pessoa_dupla = get_pessoa(numero_pessoa=pessoa.dupla_numero)
+            pessoa_dupla.estado = Pessoa.aguardando
+            pessoa_dupla.numero_camara = None
+            salvar_pessoa(pessoa=pessoa_dupla)
+        salvar_pessoa(pessoa=pessoa)
+        return f"Pessoa {numero_atendido} desrriscada"
+    return "Não foi possível desriscar esse nome!"
+
+
+app.run(port=5001, debug=True)

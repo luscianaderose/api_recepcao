@@ -4,116 +4,95 @@ from api_recepcao.database.modelos.base_modelo import BaseModelo
 from .fila_modelo import fila_pessoa, FilaModelo
 from .camara_modelo import CamaraModelo
 from api_recepcao.database.conf.sessao import criar_sessao, fechar_sessao
+from sqlalchemy import func
 
-
-# class PessoaModelo(BaseModelo):
-#     __tablename__ = 'pessoa'
-#     numero = Column(Integer, primary_key=True, autoincrement=True)
-#     nome = Column(String(100))
-#     dupla_numero = Column(Integer, ForeignKey('pessoa.numero'), nullable=True, default=None)
-#     #dupla_numero = Column(Integer, ForeignKey('pessoa.numero'), default=-1)
-#     estado = Column(String(30), default='aguardando')
-#     observacao = Column(String(200), default='')
-#     camara_id = Column(String(30), ForeignKey('camara.numero'))
-#     camara = relationship('CamaraModelo', back_populates='pessoas', foreign_keys=[camara_id])
-#     fila = relationship('FilaModelo', secondary=fila_pessoa, back_populates='pessoas')
-#     dupla = relationship('PessoaModelo', remote_side=[numero], backref='duplas')
-    #dupla = relationship('PessoaModelo', back_populates='dupla_numero')
 
 class PessoaModelo(BaseModelo):
-    __tablename__ = 'pessoa'
+    __tablename__ = "pessoa"
     numero = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(100))
-    dupla_numero = Column(Integer, ForeignKey('pessoa.numero', name='fk_dupla_pessoa'), nullable=True, default=None)
-    estado = Column(String(30), default='aguardando')
-    observacao = Column(String(200), default='')
-    camara_id = Column(String(30), ForeignKey('camara.numero', name='fk_pessoa_camara'))
-    camara = relationship('CamaraModelo', back_populates='pessoas', foreign_keys=[camara_id])
-    fila = relationship('FilaModelo', secondary=fila_pessoa, back_populates='pessoas')
-    dupla = relationship('PessoaModelo', remote_side=[numero], backref='duplas')
+    dupla_numero = Column(
+        Integer,
+        ForeignKey("pessoa.numero", name="fk_dupla_pessoa"),
+        nullable=True,
+        default=None,
+    )
+    estado = Column(String(30), default="aguardando")
+    observacao = Column(String(200), default="")
+    numero_camara = Column(
+        String(30), ForeignKey("camara.numero", name="fk_pessoa_camara", use_alter=True)
+    )
+    fila_atividade = Column(
+        String(30), ForeignKey("fila.atividade", name="fk_pessoa_fila")
+    )
+    camara = relationship(
+        "CamaraModelo", back_populates="pessoas", foreign_keys=[numero_camara]
+    )
+    fila = relationship("FilaModelo", secondary=fila_pessoa, back_populates="pessoas")
+    dupla = relationship("PessoaModelo", remote_side=[numero], backref="duplas")
 
-def criar_pessoa(nome, camara_id):
-    sessao = criar_sessao()
-    pessoa = PessoaModelo(nome=nome, camara_id=camara_id)
-    sessao.add(pessoa)
-    sessao.commit()
-    fechar_sessao(sessao)
-
-def buscar_todas_pessoas():
-    sessao = criar_sessao()
-    pessoas = sessao.query(PessoaModelo).all()
-    fechar_sessao(sessao)
-    return pessoas
-
-def buscar_pessoa_por_numero(numero):
-    sessao = criar_sessao()
-    pessoa = sessao.query(PessoaModelo).filter(PessoaModelo.numero == numero).one_or_none()
-    fechar_sessao(sessao)
-    return pessoa
-
-def buscar_pessoas_por_camara(camara_id):
-    sessao = criar_sessao()
-    pessoas = sessao.query(PessoaModelo).filter(PessoaModelo.camara_id == camara_id).all()
-    fechar_sessao(sessao)
-    return pessoas
-
-def deletar_pessoa_por_numero(numero):
-    sessao = criar_sessao()
-    pessoa = sessao.query(PessoaModelo).filter(PessoaModelo.numero == numero).one_or_none()
-    if pessoa:
-        sessao.delete(pessoa)
-        sessao.commit()
-        print(f'Pessoa com número {numero} deletada com sucesso!')
-    else:
-        print(f'A pessoa com número {numero} não existe no banco de dados!')
-    fechar_sessao(sessao)
 
 # Função para popular as pessoas apenas como teste.
 def popular_pessoas(
     pessoas=[
-        ('Ana Paula Soares', '2'),
-        ('Beatriz Coutinho', '2'),
-        ('Douglas Pinheiro', '2'),
-        ('Eduardo Silva', '2'),
-        ('Fabiana Feliz', '4'),
-        ('Gabriela Machado', '4'),
-        ('Henrique De Rose', '4'),
-        ('Igor Igreja', '4'),
-        ('João Caco', '3'),
-        ('Keyla Barbosa', '3'),
-        ('Lusciana De Rose', '3'),
-        ('Mariana Figueira', '3'),
-        ('Nair Wllington', '3A'),
-        ('Olga Feliz', '3A'),
-        ('Chico Xavier Figueira', '3A'),
-        ('Thereza de Calcutá', '3A'),
+        ("Ana Paula Soares", "2"),
+        ("Beatriz Coutinho", "2"),
+        ("Douglas Pinheiro", "2"),
+        ("Eduardo Silva", "2"),
+        ("Fabiana Feliz", "4"),
+        ("Gabriela Machado", "4"),
+        ("Henrique De Rose", "4"),
+        ("Igor Igreja", "4"),
+        ("João Caco", "3"),
+        ("Keyla Barbosa", "3"),
+        ("Lusciana De Rose", "3"),
+        ("Mariana Figueira", "3"),
+        ("Nair Wllington", "3A"),
+        ("Olga Feliz", "3A"),
+        ("Chico Xavier Figueira", "3A"),
+        ("Thereza de Calcutá", "3A"),
     ]
 ):
     sessao = criar_sessao()
     db_pessoas = sessao.query(PessoaModelo).all()
     if not db_pessoas:
-        for nome, camara_id in pessoas:
-            pessoa = PessoaModelo(nome=nome, camara_id=camara_id)
-            if pessoa.camara_id:
-                camara = sessao.query(CamaraModelo).filter(CamaraModelo.numero==pessoa.camara_id).one_or_none()
-                if camara.fila_atividade:
-                    fila = sessao.query(FilaModelo).filter(FilaModelo.atividade==camara.fila_atividade).one_or_none()
-                    fila.pessoas.append(pessoa)
+        for nome, numero_camara in pessoas:
+            pessoa = PessoaModelo(nome=nome, numero_camara=numero_camara)
             sessao.add(pessoa)
-            print(f'Adicionando pessoa {nome}.')
-        sessao.commit()
-    fechar_sessao(sessao)
 
-def atualizar_pessoa(pessoa):
-    sessao = criar_sessao()
-    db_pessoa = sessao.query(PessoaModelo).filter(PessoaModelo.numero == pessoa.numero).one_or_none()
-    if db_pessoa:
-        db_pessoa.numero = pessoa.numero
-        db_pessoa.nome = pessoa.nome
-        db_pessoa.dupla_numero = pessoa.dupla
-        db_pessoa.estado = pessoa.estado
-        if pessoa.camara:
-            db_pessoa.camara_id = pessoa.camara.numero_camara
-    sessao.commit()
-    fechar_sessao(sessao)
+        for nome, numero_camara in pessoas:
+            pessoa = sessao.query(PessoaModelo).filter_by(nome=nome).one()
+            if pessoa.numero_camara:
+                camara = (
+                    sessao.query(CamaraModelo)
+                    .filter(CamaraModelo.numero == pessoa.numero_camara)
+                    .one_or_none()
+                )
+                if camara.fila_atividade:
+                    fila = (
+                        sessao.query(FilaModelo)
+                        .filter(FilaModelo.atividade == camara.fila_atividade)
+                        .one_or_none()
+                    )
 
+                    pessoa.fila_atividade = fila.atividade
+                    posicao = (
+                        sessao.query(func.max(fila_pessoa.c.posicao))
+                        .filter(fila_pessoa.c.fila_atividade == fila.atividade)
+                        .scalar()
+                        or 0
+                    )
+
+                    posicao += 1
+                    # print(posicao)
+
+                    nova_fila_pessoa = fila_pessoa.insert().values(
+                        posicao=posicao,
+                        fila_atividade=fila.atividade,
+                        pessoa_numero=pessoa.numero,
+                    )
+                    sessao.execute(nova_fila_pessoa)
+
+                sessao.add(pessoa)
+            sessao.commit()
+    fechar_sessao(sessao)

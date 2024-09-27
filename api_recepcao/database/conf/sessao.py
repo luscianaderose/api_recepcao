@@ -6,17 +6,17 @@ from sqlalchemy.ext.declarative import declarative_base
 
 engine = None
 
+
 def criar_engine():
     global engine
 
     if engine:
         return
-    
-    engine = create_engine(
-        os.environ.get('DATABASE_URL') or 'sqlite:///recepcao.db'
-    )
-    
+
+    engine = create_engine(os.environ.get("DATABASE_URL") or "sqlite:///recepcao.db")
+
     return engine
+
 
 def criar_sessao():
     global engine
@@ -27,20 +27,24 @@ def criar_sessao():
     Sessao = sessionmaker(bind=engine, expire_on_commit=False)
     return Sessao()
 
+
 def criar_tabelas():
     global engine
 
     if not engine:
         criar_engine()
 
-    from api_recepcao.database.modelos.camara_modelo import CamaraModelo
-    from api_recepcao.database.modelos.fila_modelo import FilaModelo
     from api_recepcao.database.modelos.pessoa_modelo import PessoaModelo
+    from api_recepcao.database.modelos.fila_modelo import FilaModelo
+    from api_recepcao.database.modelos.camara_modelo import CamaraModelo
+
     from api_recepcao.database.modelos.base_modelo import BaseModelo
-    BaseModelo.metadata.drop_all(engine) #excluir banco automaticamente e criar de novo
+
+    BaseModelo.metadata.drop_all(
+        engine
+    )  # excluir banco automaticamente e criar de novo
     BaseModelo.metadata.create_all(engine)
+
 
 def fechar_sessao(sessao):
     sessao.close()
-    
-
