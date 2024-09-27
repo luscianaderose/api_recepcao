@@ -21,7 +21,7 @@ from api_recepcao.service.trocar_posicao import trocar_posicao
 from api_recepcao.service.dupla_service import criar_dupla, cancelar_dupla
 
 
-setup_db()
+# setup_db()
 
 set_camaras_chamando = set()
 set_audios_notificacoes = set()
@@ -324,4 +324,4 @@ def desriscar():
     return "Não foi possível desriscar esse nome!"
 
 
-app.run(port=5001, debug=True)
+#app.run(port=5001, debug=True)

@@ -7,13 +7,14 @@ A Congregação Espírita Francisco de Paula oferece tratamentos espirituais de 
 ## SUMÁRIO
 
 - [`INSTALAÇÃO`](#INSTALAÇÃO)
+- [`PARA RODAR O PROJETO`](#PARA-RODAR-O-PROJETO)
 - [`LINKS DO PROJETO`](#LINKS-DO-PROJETO)
 
 ## INSTALAÇÃO
 
 ### PRÉ-REQUISITOS
 
-- Instalar o Docker na máquina
+- Instalar o Docker na máquina.
 
 ### PARA INICIAR O REACT
 
@@ -38,7 +39,30 @@ docker build -t nome_da_imagem .
 docker run -d -p 5001:5001 nome_da_imagem
 ```
 
-### LINKS DO PROJETO
+
+## PARA RODAR O PROJETO
+O seguinte processo só precisa ser feito na primeira vez para iniciar o banco de dados. Abra outro terminal Ubuntu, digite o seguinte comando e pressione Enter:
+```
+cd "/mnt/f/_dev pos puc/prjrecepcaocefp"
+```
+
+Digite o seguinte comando e pressione Enter:
+```
+python3
+```
+
+Digite o seguinte comando e pressione Enter:
+```
+from api_recepcao.database.conf.setup import setup_db
+```
+
+Digite o seguinte comando e pressione Enter:
+```
+setup_db()
+```
+
+
+## LINKS DO PROJETO
 
 Os demais repositórios associados a este projetos podem ser consultados em:
 
