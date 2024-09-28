@@ -13,6 +13,7 @@ from api_recepcao.service.pessoa_service import (
     get_pessoa_com_posicao,
     salvar_pessoa,
     get_pessoas_fila,
+    get_todas_pessoas_com_posicao,
     add_pessoa,
     deletar_pessoa,
 )
@@ -21,7 +22,7 @@ from api_recepcao.service.trocar_posicao import trocar_posicao
 from api_recepcao.service.dupla_service import criar_dupla, cancelar_dupla
 
 
-# setup_db()
+#setup_db()
 
 set_camaras_chamando = set()
 set_audios_notificacoes = set()
@@ -247,16 +248,30 @@ def reposicionar_atendido():
     mover_para = request.args.get("mover_para")
 
     pessoa_fila = get_pessoa_com_posicao(numero_pessoa=numero_atendido)
+    pessoas_fila = get_todas_pessoas_com_posicao(pessoa_fila.fila_atividade)
+
+    # print("numero_atendido", numero_atendido)
+    # print("pessoa_fila", pessoa_fila)
+    # print("pessoas_fila", pessoas_fila)
+    # print("posicao_pessoa_anterior", pessoa_fila.posicao - 1)
+    # print("posicao_pessoa_anterior", pessoas_fila[pessoa_fila.posicao - 1])
+
+    # return ""
 
     if mover_para == "cima":
-        numero_pessoa_anterior = pessoa_fila.posicao - 1
-        if numero_pessoa_anterior >= 1:
-            trocar_posicao(numero_atendido, numero_pessoa_anterior)
+        posicao_pessoa_anterior = pessoa_fila.posicao - 1
+        if posicao_pessoa_anterior >= 1:
+            trocar_posicao(
+                numero_atendido, pessoas_fila[posicao_pessoa_anterior].numero
+            )
         else:
             return f"Atendido {numero_atendido} não pode ser movido para cima"
     elif mover_para == "baixo":
-        numero_pessoa_posterior = pessoa_fila.posicao + 1
-        trocar_posicao(numero_atendido, numero_pessoa_posterior)
+        posicao_pessoa_posterior = pessoa_fila.posicao + 1
+        if posicao_pessoa_posterior < len(pessoas_fila.keys()):
+            trocar_posicao(
+                numero_atendido, pessoas_fila[posicao_pessoa_posterior].numero
+            )
 
     return "Atendido Reposicionado"
 
@@ -324,4 +339,4 @@ def desriscar():
     return "Não foi possível desriscar esse nome!"
 
 
-#app.run(port=5001, debug=True)
+# app.run(port=5001, debug=True)

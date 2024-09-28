@@ -9,6 +9,7 @@ from api_recepcao.service.entity_service import (
 
 
 def trocar_posicao(numero_pessoa1, numero_pessoa2, ignorar_duplas=False):
+    print(numero_pessoa1, numero_pessoa2)
     pessoa1 = buscar_pessoa_por_numero(numero_pessoa1)
     pessoa2 = buscar_pessoa_por_numero(numero_pessoa2)
 
