@@ -66,7 +66,7 @@ setup_db()
 
 Os demais repositórios associados a este projetos podem ser consultados em:
 
-- [front_recepcao](https://github.com/luscianaderose/front_recepcao)
+- [api_recepcao](https://github.com/luscianaderose/api_recepcao)
 - [api_calendario](https://github.com/luscianaderose/api_calendario)
-- [deploy_recepcao](https://github.com/luscianaderose/deploy_recepcao)
+- [front_recepcao](https://github.com/luscianaderose/front_recepcao)
 - [figma](https://www.figma.com/proto/4WaxuFjrOhR8aIHIlHXuIP/prj-recepcao-cefp-01?node-id=0-1&t=XGYyK7bsqyAa5qK2-1)
