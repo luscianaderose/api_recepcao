@@ -43,7 +43,7 @@ docker run -d -p 5001:5001 nome_da_imagem
 ## PARA RODAR O PROJETO
 O seguinte processo só precisa ser feito na primeira vez para iniciar o banco de dados. Abra outro terminal Ubuntu, digite o seguinte comando e pressione Enter:
 ```
-cd "/mnt/f/_dev pos puc/prjrecepcaocefp"
+docker exec -it <ID do container de api_recepcao> sh
 ```
 
 Digite o seguinte comando e pressione Enter:
