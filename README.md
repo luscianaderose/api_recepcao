@@ -1,4 +1,4 @@
-# APLICAÇÃO DA RECEPÇÃO DE CÂMARAS DA CEFP
+# APLICAÇÃO DA RECEPÇÃO DE CÂMARAS DA CEFP: API RECEPÇÃO
 
 ## OBJETIVO DA APLICAÇÃO
 
@@ -35,13 +35,17 @@ Digite os seguintes comandos no terminal:
 
 ```
 git clone https://github.com/luscianaderose/api_recepcao
+```
+```
 docker build -t nome_da_imagem .
+```
+```
 docker run -d -p 5001:5001 nome_da_imagem
 ```
 
 
 ## PARA RODAR O PROJETO
-O seguinte processo só precisa ser feito na primeira vez para iniciar o banco de dados. Abra outro terminal Ubuntu, digite o seguinte comando e pressione Enter:
+O seguinte processo só precisa ser feito na primeira vez para iniciar o banco de dados. Abra outro terminal do Linux. É preciso copiar o ID do container. Digite o seguinte comando, cole o ID e pressione Enter:
 ```
 docker exec -it <ID do container de api_recepcao> sh
 ```
